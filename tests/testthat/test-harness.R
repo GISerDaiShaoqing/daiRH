@@ -354,7 +354,7 @@ test_that("panel clear: .dai_reset_agent_state zeroes budget, empties turns, log
   cfg$max_steps <- 2
   state <- .dairh_new_state(cfg)
   tools <- dairh_agent_tools(cfg, state = state)
-  # 盒子存 set_turns 观测（避开 <<<- 作用域坑）
+  # \u76D2\u5B50\u5B58 set_turns \u89C2\u6D4B\uFF08\u907F\u5F00 <<<- \u4F5C\u7528\u57DF\u5751\uFF09
   box <- new.env(parent = emptyenv())
   box$nturns <- -1L
   fake_client <- list(set_turns = function(v) {
@@ -388,7 +388,7 @@ test_that("orphan sweep: callr-fingerprinted child killed; self pid only de-regi
   withr::defer(unlink(tmpd, recursive = TRUE), envir = parent.frame())
   withr::local_options(daiRH.pid_dir = tmpd)
 
-  # 1) 真 callr 子进程（cmdline 带 callr-scr- 临时脚本）→ 指纹命中 → 回收
+  # 1) \u771F callr \u5B50\u8FDB\u7A0B\uFF08cmdline \u5E26 callr-scr- \u4E34\u65F6\u811A\u672C\uFF09\u2192 \u6307\u7EB9\u547D\u4E2D \u2192 \u56DE\u6536
   ch <- callr::r_bg(function() Sys.sleep(60), stdout = tempfile(), stderr = tempfile())
   pf <- file.path(tmpd, "x1.pid")
   writeLines(as.character(ch$get_pid()), pf)
@@ -398,7 +398,7 @@ test_that("orphan sweep: callr-fingerprinted child killed; self pid only de-regi
   expect_false(isTRUE(tryCatch(ch$is_alive(), error = function(e) FALSE)))
   expect_false(file.exists(pf))
 
-  # 2) 指纹不匹配（本测试进程，cmdline 无 callr-scr-）→ 绝不杀，只清登记
+  # 2) \u6307\u7EB9\u4E0D\u5339\u914D\uFF08\u672C\u6D4B\u8BD5\u8FDB\u7A0B\uFF0Ccmdline \u65E0 callr-scr-\uFF09\u2192 \u7EDD\u4E0D\u6740\uFF0C\u53EA\u6E05\u767B\u8BB0
   own <- as.integer(Sys.getpid())
   pf2 <- file.path(tmpd, "x2.pid")
   writeLines(as.character(own), pf2)
@@ -406,7 +406,7 @@ test_that("orphan sweep: callr-fingerprinted child killed; self pid only de-regi
   expect_identical(k, 0L)
   expect_false(file.exists(pf2))
 
-  # 3) skip_pids 命中 → 登记保留
+  # 3) skip_pids \u547D\u4E2D \u2192 \u767B\u8BB0\u4FDD\u7559
   pf3 <- file.path(tmpd, "x3.pid")
   writeLines(as.character(own), pf3)
   k <- .dairh_sweep_orphan_children(skip_pids = own)
@@ -414,14 +414,14 @@ test_that("orphan sweep: callr-fingerprinted child killed; self pid only de-regi
   expect_true(file.exists(pf3))
   unlink(pf3)
 
-  # 4) 垃圾记录 → 直接清，不回收任何东西
+  # 4) \u5783\u573E\u8BB0\u5F55 \u2192 \u76F4\u63A5\u6E05\uFF0C\u4E0D\u56DE\u6536\u4EFB\u4F55\u4E1C\u897F
   pf4 <- file.path(tmpd, "x4.pid")
   writeLines("not-a-pid", pf4)
   k <- .dairh_sweep_orphan_children()
   expect_identical(k, 0L)
   expect_false(file.exists(pf4))
 
-  # 5) 超过 1 天的过期登记 → 过期清理
+  # 5) \u8D85\u8FC7 1 \u5929\u7684\u8FC7\u671F\u767B\u8BB0 \u2192 \u8FC7\u671F\u6E05\u7406
   pf5 <- file.path(tmpd, "x5.pid")
   writeLines("1234", pf5)
   Sys.setFileTime(pf5, Sys.time() - 86400 * 2)
@@ -429,7 +429,7 @@ test_that("orphan sweep: callr-fingerprinted child killed; self pid only de-regi
   expect_identical(k, 0L)
   expect_false(file.exists(pf5))
 
-  # 6) 核不了指纹的 pid（如受保护进程）→ 第一次贴 .stale，第二次清掉，绝不动刀
+  # 6) \u6838\u4E0D\u4E86\u6307\u7EB9\u7684 pid\uFF08\u5982\u53D7\u4FDD\u62A4\u8FDB\u7A0B\uFF09\u2192 \u7B2C\u4E00\u6B21\u8D34 .stale\uFF0C\u7B2C\u4E8C\u6B21\u6E05\u6389\uFF0C\u7EDD\u4E0D\u52A8\u5200
   pf6 <- file.path(tmpd, "x6.pid")
   writeLines("4", pf6)
   k <- .dairh_sweep_orphan_children()

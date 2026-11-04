@@ -81,7 +81,7 @@ dairh_new_agent <- function(cfg = dairh_config_get()) {
   tools <- dairh_agent_tools(cfg, state = state)
   for (nm in names(tools)) client$register_tool(tools[[nm]])
   state$client <- client
-  # state 挂到 client 上：面板的清空对话（新会话）按钮靠它重置硬预算
+  # state \u6302\u5230 client \u4E0A\uFF1A\u9762\u677F\u7684\u6E05\u7A7A\u5BF9\u8BDD\uFF08\u65B0\u4F1A\u8BDD\uFF09\u6309\u94AE\u9760\u5B83\u91CD\u7F6E\u786C\u9884\u7B97
   attr(client, ".dairh_state") <- state
   client
 }

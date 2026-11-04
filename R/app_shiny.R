@@ -1,15 +1,14 @@
 # DaiRH Shiny \u804A\u5929\u9762\u677F --------------------------------------------------------
 
-# \u9762\u677F\u4E3B\u804A\u5929\u6A21\u5757\uFF08shinychat\uFF09\uFF1B\u5FEB\u6377\u4EFB\u52A1\u4E0E\u8BBE\u7F6E\u6302\u5728\u8FD9\u91CC\u3002
-# \u6CE8\u610F\uFF1Aupdate_chat_user_input \u7684\u76EE\u6807 id \u4F1A\u7ECF\u8C03\u7528\u5904 session$ns() \u5305\u88C5\uFF0C
-# \u800C chat_mod_ui("chat") \u751F\u6210\u7684\u5BB9\u5668 id \u662F NS("chat","chat")\uFF1B\u56E0\u6B64\u5FC5\u987B\u5728\u540C\u540D
-# moduleServer \u547D\u540D\u7A7A\u95F4\u91CC\u8C03\u7528\u624D\u80FD\u547D\u4E2D DOM\uFF0C\u5426\u5219\u6D88\u606F\u88AB\u9759\u9ED8\u4E22\u5F03
-# \uFF08\u5FEB\u6377\u6309\u94AE\u66FE\u56E0\u6B64\u70B9\u4E86\u6CA1\u53CD\u5E94\uFF09\u3002\u8FD9\u91CC\u7528\u89E6\u53D1\u5668\u628A\u9876\u5C42\u6309\u94AE\u4E8B\u4EF6
-# \u8F6C\u8FDB\u540C\u540D\u547D\u540D\u7A7A\u95F4\u3002
+# \u9762\u677F\u4E3B\u804A\u5929\uFF08shinychat 0.5+ \u7684 chat_ui / chat_server\uFF0C\u540C\u547D\u540D\u7A7A\u95F4\u76F4\u8FDE\uFF09\u3002
+# \u65E7\u7248 chat_mod_ui \u4F1A\u628A DOM \u5305\u8FDB NS("chat") \u547D\u540D\u7A7A\u95F4\uFF0C\u6240\u4EE5\u90A3\u65F6\u5FC5\u987B\u5728\u540C\u540D
+# moduleServer \u91CC\u8C03 update_chat_user_input \u624D\u80FD\u547D\u4E2D DOM\u30020.5 \u8D77\u6539\u7528
+# chat_ui + chat_server\uFF08\u8DD1\u5728\u8C03\u7528\u65B9\u4F5C\u7528\u57DF\uFF0C\u4E0D\u518D\u5305\u547D\u540D\u7A7A\u95F4\uFF09\uFF0C\u5168\u90E8\u804A\u5929
+# \u8F85\u52A9\u8C03\u7528\u5728\u4E3B\u4F1A\u8BDD\u4F5C\u7528\u57DF\u76F4\u63A5\u8FDB\u884C\uFF0C\u6A21\u5757\u8F6C\u63A5\u5C42\u5DF2\u6574\u4F53\u79FB\u9664\u3002
 
 # \u95EE\u5019\u8BED\u91CC\u7684\u7F16\u8F91\u5668\u4E0A\u4E0B\u6587\u72B6\u6001\u884C\uFF08\u4EC5\u540E\u53F0\u6A21\u5F0F\uFF09\uFF1A\u5FEB\u7167\u5F0F\u67B6\u6784\u4E0B
 # \u62A5\u544A\u6700\u65B0\u5FEB\u7167\u65F6\u95F4\u4E0E\u5237\u65B0\u65B9\u5F0F\uFF0C\u8BA9"\u4E3A\u4EC0\u4E48\u62FF\u4E0D\u5230\u9009\u533A"\u4E00\u773C\u53EF\u89C1\u3002
-# \u9762\u677F"清空对话"\u7684\u4F1A\u8BDD\u91CD\u7F6E\uFF1A\u786C\u9884\u7B97\u8BA1\u6570\u5F52\u96F6\uFF08\u4E0D\u91CD\u5EFA client\uFF0C
+# \u9762\u677F"\u6E05\u7A7A\u5BF9\u8BDD"\u7684\u4F1A\u8BDD\u91CD\u7F6E\uFF1A\u786C\u9884\u7B97\u8BA1\u6570\u5F52\u96F6\uFF08\u4E0D\u91CD\u5EFA client\uFF0C
 # \u4E0D\u5F80\u5B50\u8FDB\u7A0B\u501F\u5176\u5B83\u901A\u9053\u518D\u53D1\u6570\u636E\uFF09\uFF0C\u6E05\u6A21\u578B\u5386\u53F2\uFF08\u5B9E\u6D4B
 # client$set_turns(list()) \u4FDD\u7559\u7CFB\u7EDF\u63D0\u793A\uFF09\uFF1Btrace \u7EE7\u7EED\u540C\u4E00\u6587\u4EF6\u8FFD\u52A0
 # session_reset \u8BB0\u5F55\u3002
@@ -106,11 +105,21 @@
     transform: translateY(-1px);
   }
   .dai-quick .btn .fa, .dai-quick .btn .fas, .dai-quick .btn .far { color: #8b8ff5; margin-right: 5px; }
-  .shiny-chat-container {
+  shiny-chat-container {
+    /* 0.5 \u8D77\u804A\u5929\u6839\u662F\u81EA\u5B9A\u4E49\u5143\u7D20 <shiny-chat-container>\uFF08\u65E7 class \u9009\u62E9\u5668\u5DF2\u5931\u914D\uFF09\uFF1B
+       height:auto \u5185\u8054\u6837\u5F0F\u5FC5\u987B !important \u8986\u5199\uFF0C\u624D\u80FD\u6491\u6EE1\u5916\u5C42\u5305\u76D2 */
+    height: 100% !important;
     background: rgba(255,255,255,.8);
     border: 1px solid #eceafb; border-radius: 18px; overflow: hidden;
     box-shadow: 0 8px 28px rgba(80,84,180,.07);
   }
+  .shiny-chat-layout { height: 100%; }
+  .shiny-chat-messages-wrapper { height: 100%; flex: 1; }
+  /* \u7A7A 30px \u662F\u7559\u7ED9\u5DE6\u4E0A\u89D2\u5386\u53F2\u6309\u94AE\u7684\u9884\u7559\u533A\uFF1Bshow_history=FALSE \u540E\u56DE\u6536 */
+  .shiny-chat-messages { padding-top: 4px !important; }
+  /* 0.5 \u7A7A\u4F1A\u8BDD\u628A greeting \u7528 margin:auto \u7EB5\u5411\u5C45\u4E2D\uFF08\u89C2\u611F\u5373\u300C\u4E2D\u95F4\u7A7A\u4E00\u5927\u5757\u300D\uFF09\uFF1A
+     \u9876\u90E8\u951A\u5B9A\uFF0C\u56DE\u5230 0.2 \u65F6\u4EE3\u7684\u7D27\u51D1\u89C2\u611F */
+  .shiny-chat-greeting { margin-block: 0 4px !important; color: #8f8fb8; }
   .shiny-chat-message.shiny-chat-user-message {
     background: linear-gradient(120deg,#e2e4ff,#d7f2fd);
     border: 1px solid #d5d8fa; color: #3f3a9e; border-radius: 16px 16px 4px 16px;
@@ -123,7 +132,6 @@
     background: #fff; border: 1px solid #f0eefc; border-radius: 14px;
     box-shadow: 0 2px 8px rgba(90,94,190,.05); color: #46466b;
   }
-  .shiny-chat-greeting { color: #8f8fb8; }
   .shiny-chat-input {
     background: rgba(255,255,255,.92); border: 1.5px solid #e5e5fb; border-radius: 14px;
     box-shadow: inset 0 1px 3px rgba(90,94,190,.05);
@@ -270,9 +278,10 @@ dairh_panel_ui <- function(cfg = NULL) {
       ),
       shiny::div(
         style = "height: calc(100vh - 150px);",
-        shinychat::chat_mod_ui(
+        shinychat::chat_ui(
           "chat",
-          placeholder = "\u7ED9 DaiRH \u53D1\u4EFB\u52A1\uFF0C\u6216\u70B9\u4E0A\u65B9\u5FEB\u6377\u6309\u94AE..."
+          placeholder = "\u7ED9 DaiRH \u53D1\u4EFB\u52A1\uFF0C\u6216\u70B9\u4E0A\u65B9\u5FEB\u6377\u6309\u94AE...",
+          show_history = FALSE
         )
       )
     )
@@ -284,7 +293,7 @@ dairh_panel_ui <- function(cfg = NULL) {
 # \u5426\u5219\u7528\u6237\u53EA\u770B\u5230\u7A7A\u58F3\u9762\u677F\u627E\u4E0D\u5230\u4EFB\u4F55\u7EBF\u7D22\uFF08Provider \u5199\u574F\u65F6\u66FE\u5C31\u662F\u8FD9\u6837\uFF09\u3002
 .dairh_panel_server_impl <- function(cfg) {
   function(input, output, session) {
-    # show_plot 的静态图片服务（同源相对 URL，见 .dai_panel_img_dir 注释）
+    # show_plot \u7684\u9759\u6001\u56FE\u7247\u670D\u52A1\uFF08\u540C\u6E90\u76F8\u5BF9 URL\uFF0C\u89C1 .dai_panel_img_dir \u6CE8\u91CA\uFF09
     tryCatch(shiny::addResourcePath("dairhimg", .dai_panel_img_dir()),
       error = function(e) NULL)
 
@@ -311,7 +320,7 @@ dairh_panel_ui <- function(cfg = NULL) {
     })
 
     if (!is.null(client)) {
-      shinychat::chat_mod_server(
+      shinychat::chat_server(
         "chat",
         client,
         greeting = paste0(
@@ -321,8 +330,7 @@ dairh_panel_ui <- function(cfg = NULL) {
           if (isTRUE(cfg$restrict_paths)) paste0("\n\n\u6587\u4EF6\u64CD\u4F5C\u8303\u56F4\uFF1A", dairh_base_dir()),
           .dairh_greeting_bridge_line()
         ),
-        bookmark_on_input = FALSE,
-        bookmark_on_response = FALSE
+        history = FALSE
       )
     } else {
       shiny::showNotification(
@@ -340,69 +348,65 @@ dairh_panel_ui <- function(cfg = NULL) {
       )
     }
 
-    # \u5FEB\u6377\u6309\u94AE \u2192 \u804A\u5929\u6846\uFF1A\u6309\u94AE\u8F93\u5165\u662F\u9876\u5C42 id\uFF0C\u4F46 update_chat_user_input \u5FC5\u987B
-    # \u5728 chat \u6A21\u5757\u547D\u540D\u7A7A\u95F4\u91CC\u8C03\u7528\u624D\u80FD\u547D\u4E2D DOM\uFF08\u89C1\u6587\u4EF6\u5934\u6CE8\u91CA\uFF09\uFF0C\u6240\u4EE5\u7ECF\u89E6\u53D1\u5668\u4E2D\u8F6C\u3002
+    # \u5FEB\u6377\u6309\u94AE \u2192 \u804A\u5929\u6846\uFF1A\u7ECF\u89E6\u53D1\u5668\u4E2D\u8F6C\u3002shinychat 0.5 \u7684 chat_server \u8DD1\u5728
+    # \u8C03\u7528\u65B9\u4F5C\u7528\u57DF\uFF08\u4E0D\u518D\u6709 module \u547D\u540D\u7A7A\u95F4\uFF09\uFF0Cupdate_chat_user_input /
+    # chat_clear / chat_append \u5728\u4E3B\u4F1A\u8BDD\u4F5C\u7528\u57DF\u76F4\u63A5\u8C03\u7528\u5373\u53EF\uFF0C\u65E0\u9700\u518D\u8F6C\u63A5\u3002
     chat_send <- shiny::reactiveValues(trigger = NULL)
     clear_rv <- shiny::reactiveValues(reset = 0L)
-    shiny::moduleServer("chat", function(input, output, session) {
-      shiny::observeEvent(chat_send$trigger, {
-        shiny::req(chat_send$trigger)
-        shinychat::update_chat_user_input(
-          "chat", value = chat_send$trigger, submit = TRUE, focus = TRUE
-        )
-        chat_send$trigger <- NULL
-      })
-      # \u6E05\u7A7A\u5BF9\u8BDD\uFF08\u65B0\u4F1A\u8BDD\uFF09\u6267\u884C\u5668\uFF1A\u5728 chat \u547D\u540D\u7A7A\u95F4\u91CC\u8C03
-      # shinychat \u540C\u6B3E\u63A5\u53E3\uFF08chat_clear / chat_append \u5747\u63A5\u53D7
-      # session \u53C2\u6570\uFF09\uFF0C\u4E0E\u6A21\u5757\u5185\u90E8\u7684 client_clear \u884C\u4E3A\u4E00\u81F4
-      shiny::observeEvent(clear_rv$reset, {
-        shiny::req(unname(clear_rv$reset) > 0L, !is.null(client))
-        tryCatch(.dai_reset_agent_state(client), error = function(e) NULL)
-        tryCatch(shinychat::chat_clear("chat", session = session),
-          error = function(e) NULL)
-        tryCatch(shinychat::chat_append("chat", paste0(
-          "**DaiRH \u65B0\u4F1A\u8BDD**\u3000", cfg$provider, " \u00B7 ", cfg$model,
-          "\n\n\u804A\u8BB0\u4E0E Agent \u4F1A\u8BDD\u5DF2\u6E05\u7A7A\uFF0C\u5355\u8F6E\u786C\u9884\u7B97\u5DF2\u5F52\u96F6\u3002"
-        ), session = session), error = function(e) NULL)
-      })
-      # show_plot \u961F\u5217\u6D88\u8D39\uFF1A\u5DE5\u5177\u4FA7\u63A8\u56FE\u8FDB .dai_panel_bus\uFF0C
-      # \u8FD9\u91CC\u8F6E\u8BE2\u6295\u8FDB\u804A\u5929\u6D41\uFF08\u5DE5\u5177\u6267\u884C\u4E0A\u4E0B\u6587\u8FDB\u4E0D\u4E86\u6A21\u5757\u547D\u540D\u7A7A\u95F4\uFF0C
-      # \u5FC5\u987B\u501F\u9053\u2014\u2014\u540C update_chat_user_input \u7684\u5751\uFF09
-      shiny::observe({
-        shiny::invalidateLater(400, session)
-        img <- .dai_panel_bus$img
-        if (is.null(img)) return()
-        .dai_panel_bus$img <- NULL
-        # shinychat 前端打包了 hast-util-sanitize（GitHub 白名单）：
-        # img src 只放行 http/https，data:URI 会被剥成破图。
-        # 所以把图拷进面板静态服务目录，用同源相对 URL 引用。
-        d <- .dai_panel_img_dir()
-        fname <- paste0("p-", format(Sys.time(), "%Y%m%d-%H%M%S"), "-",
-          as.integer(runif(1, 1, 1e6)), ".",
-          tolower(tools::file_ext(img$path)))
-        copied <- tryCatch({
-          file.copy(img$path, file.path(d, fname), overwrite = TRUE)
-        }, error = function(e) FALSE)
-        if (!isTRUE(copied)) return()
-        tryCatch(shinychat::chat_append_message("chat",
-          list(role = "assistant", content = htmltools::tags$img(
-            src = paste0("dairhimg/", fname),
-            alt = basename(img$path),
-            style = "max-width:100%;border-radius:10px;"
-          )),
-          chunk = FALSE, session = session), error = function(e) NULL)
-        # \u987A\u624B\u6E05\u7406 24h \u524D\u7684\u65E7\u56FE\uFF08\u76EE\u5F55\u53EA\u5B58\u62F7\u8D1D\uFF0C\u4E0D\u5B58\u539F\u4EF6\uFF09
-        tryCatch({
-          old <- list.files(d, full.names = TRUE)
-          info <- file.info(old)
-          unlink(old[is.finite(info$mtime) &
-            difftime(Sys.time(), info$mtime, units = "days") > 1])
-        }, error = function(e) NULL)
-      })
+    shiny::observeEvent(chat_send$trigger, {
+      shiny::req(chat_send$trigger)
+      shinychat::update_chat_user_input(
+        "chat", value = chat_send$trigger, submit = TRUE, focus = TRUE
+      )
+      chat_send$trigger <- NULL
+    })
+    # \u6E05\u7A7A\u5BF9\u8BDD\uFF08\u65B0\u4F1A\u8BDD\uFF09\u6267\u884C\u5668\uFF1A\u91CD\u7F6E Agent \u72B6\u6001 + \u6E05 UI + \u53D1\u95EE\u5019\u884C
+    # \uFF08chat_clear / chat_append \u4F20\u4E3B\u4F1A\u8BDD session\uFF0C\u4E0E chat_server \u540C\u4F5C\u7528\u57DF\u4E00\u81F4\uFF09
+    shiny::observeEvent(clear_rv$reset, {
+      shiny::req(unname(clear_rv$reset) > 0L, !is.null(client))
+      tryCatch(.dai_reset_agent_state(client), error = function(e) NULL)
+      tryCatch(shinychat::chat_clear("chat", session = session),
+        error = function(e) NULL)
+      tryCatch(shinychat::chat_append("chat", paste0(
+        "**DaiRH \u65B0\u4F1A\u8BDD**\u3000", cfg$provider, " \u00B7 ", cfg$model,
+        "\n\n\u804A\u8BB0\u4E0E Agent \u4F1A\u8BDD\u5DF2\u6E05\u7A7A\uFF0C\u5355\u8F6E\u786C\u9884\u7B97\u5DF2\u5F52\u96F6\u3002"
+      ), session = session), error = function(e) NULL)
+    })
+    # show_plot \u961F\u5217\u6D88\u8D39\uFF1A\u5DE5\u5177\u4FA7\u63A8\u56FE\u8FDB .dai_panel_bus\uFF0C\u8FD9\u91CC\u8F6E\u8BE2\u6295\u8FDB\u804A\u5929\u6D41
+    shiny::observe({
+      shiny::invalidateLater(400, session)
+      img <- .dai_panel_bus$img
+      if (is.null(img)) return()
+      .dai_panel_bus$img <- NULL
+      # shinychat \u524D\u7AEF\u6253\u5305\u4E86 hast-util-sanitize\uFF08GitHub \u767D\u540D\u5355\uFF09\uFF1A
+      # img src \u53EA\u653E\u884C http/https\uFF0Cdata:URI \u4F1A\u88AB\u5265\u6210\u7834\u56FE\u3002
+      # \u6240\u4EE5\u628A\u56FE\u62F7\u8FDB\u9762\u677F\u9759\u6001\u670D\u52A1\u76EE\u5F55\uFF0C\u7528\u540C\u6E90\u76F8\u5BF9 URL \u5F15\u7528\u3002
+      d <- .dai_panel_img_dir()
+      fname <- paste0("p-", format(Sys.time(), "%Y%m%d-%H%M%S"), "-",
+        as.integer(runif(1, 1, 1e6)), ".",
+        tolower(tools::file_ext(img$path)))
+      copied <- tryCatch({
+        file.copy(img$path, file.path(d, fname), overwrite = TRUE)
+      }, error = function(e) FALSE)
+      if (!isTRUE(copied)) return()
+      tryCatch(shinychat::chat_append_message("chat",
+        list(role = "assistant", content = htmltools::tags$img(
+          src = paste0("dairhimg/", fname),
+          alt = basename(img$path),
+          style = "max-width:100%;border-radius:10px;"
+        )),
+        chunk = FALSE, session = session), error = function(e) NULL)
+      # \u987A\u624B\u6E05\u7406 24h \u524D\u7684\u65E7\u56FE\uFF08\u76EE\u5F55\u53EA\u5B58\u62F7\u8D1D\uFF0C\u4E0D\u5B58\u539F\u4EF6\uFF09
+      tryCatch({
+        old <- list.files(d, full.names = TRUE)
+        info <- file.info(old)
+        unlink(old[is.finite(info$mtime) &
+          difftime(Sys.time(), info$mtime, units = "days") > 1])
+      }, error = function(e) NULL)
     })
     .dairh_chat_send <- function(prompt) chat_send$trigger <- prompt
 
-    # \u6E05\u7A7A\u5BF9\u8BDD\uFF1A\u5F39\u7A97\u786E\u8BA4\u540E\u4EA4\u7ED9\u6A21\u5757\u5185\u6267\u884C\u5668
+    # \u6E05\u7A7A\u5BF9\u8BDD\uFF1A\u5F39\u7A97\u786E\u8BA4\u540E\u4EA4\u7ED9\u4E0A\u65B9\u6267\u884C\u5668
     shiny::observeEvent(input$btn_clear, {
       shiny::showModal(shiny::modalDialog(
         title = shiny::tagList(shiny::icon("eraser"), "\u6E05\u7A7A\u5BF9\u8BDD\uFF1F"),

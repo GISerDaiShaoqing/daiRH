@@ -37,13 +37,13 @@
   norm
 }
 
-# show_plot 的图片投递总线：工具侧校验后推到这里，app_shiny 的 chat 模块
-# 轮询消费（渲染进聊天流）。环境级单飞槽位：新图覆盖旧图。
+# show_plot \u7684\u56FE\u7247\u6295\u9012\u603B\u7EBF\uFF1A\u5DE5\u5177\u4FA7\u6821\u9A8C\u540E\u63A8\u5230\u8FD9\u91CC\uFF0Capp_shiny \u7684 chat \u6A21\u5757
+# \u8F6E\u8BE2\u6D88\u8D39\uFF08\u6E32\u67D3\u8FDB\u804A\u5929\u6D41\uFF09\u3002\u73AF\u5883\u7EA7\u5355\u98DE\u69FD\u4F4D\uFF1A\u65B0\u56FE\u8986\u76D6\u65E7\u56FE\u3002
 .dai_panel_bus <- new.env(parent = emptyenv())
 
-# show_plot 图片的静态服务目录：面板 app 把它注册成 shiny 资源路径，
-# 聊天里用同源相对 URL 引用。不能用 data:URI——shinychat 前端打包了
-# hast-util-sanitize（GitHub 白名单），img src 只放行 http/https，data: 会被剥掉。
+# show_plot \u56FE\u7247\u7684\u9759\u6001\u670D\u52A1\u76EE\u5F55\uFF1A\u9762\u677F app \u628A\u5B83\u6CE8\u518C\u6210 shiny \u8D44\u6E90\u8DEF\u5F84\uFF0C
+# \u804A\u5929\u91CC\u7528\u540C\u6E90\u76F8\u5BF9 URL \u5F15\u7528\u3002\u4E0D\u80FD\u7528 data:URI\u2014\u2014shinychat \u524D\u7AEF\u6253\u5305\u4E86
+# hast-util-sanitize\uFF08GitHub \u767D\u540D\u5355\uFF09\uFF0Cimg src \u53EA\u653E\u884C http/https\uFF0Cdata: \u4F1A\u88AB\u5265\u6389\u3002
 .dai_panel_img_dir <- function() {
   d <- file.path(tools::R_user_dir("daiRH", "cache"), "panel-imgs")
   dir.create(d, recursive = TRUE, showWarnings = FALSE)

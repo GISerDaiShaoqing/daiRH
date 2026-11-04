@@ -1,3 +1,20 @@
+# daiRH 0.3.0
+
+* **shinychat 0.5 / ellmer 0.5 适配**：聊天接线迁移到新版 `chat_ui()` + `chat_server()`
+  （`chat_mod_ui` / `chat_mod_server`、`bookmark_on_input` / `bookmark_on_response`
+  均已废弃，调用全部移除，面板不再吐 deprecation 警告）；依赖下限提到
+  `ellmer (>= 0.5.0)`、`shinychat (>= 0.5.0)`。模型端工具结果仍统一为文本回传
+  （ellmer 0.5 起 tool 返回复杂对象会警告，daiRH 的 9 个内置工具不受影响）。
+* **面板布局自适应修复**：修复空会话时聊天区中间空一大块——shinychat 0.5 会把
+  空会话问候卡用 `margin:auto` 纵向居中，并在左上角预留 30px 历史按钮区；现在
+  问候卡顶部锚定、历史按钮关闭、磨砂卡片样式随自定义元素选择器失配一并找回
+  （`<shiny-chat-container>` 标签选择器 + `height:100%` 撑满包盒）。已在
+  360–900px 宽高区间截图验证。
+* **会话持久化（多会话 history 抽屉）暂缓接入**：shinychat 0.5 自带会话存储，
+  但面板的 Agent 状态（硬预算计数、工具注册、钩子）是会话级的，直接启用会
+  出现"UI 回放旧对话、Agent 却是新会话"的错位；留待 harness 侧重水合方案，
+  仍是路线图项。
+
 # daiRH 0.2.0
 
 * **harness 层落地**（H = harness 名副其实）：

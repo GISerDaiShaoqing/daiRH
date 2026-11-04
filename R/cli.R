@@ -1,10 +1,10 @@
-# DaiRH 控制台 CLI（claude-code 风格）------------------------------------------
-# 在 RStudio 控制台/任意 R 会话里直接与 agent 对话：readline 循环 + ellmer 流式
-# 输出 + 工具调用过程回显。与面板互不依赖（控制台跑 CLI 时，bg 面板子进程照常独立）。
-# 代价：运行期间控制台被占用（同 gadget 模式）；Ctrl+C 或 /exit 退出。
+# DaiRH \u63A7\u5236\u53F0 CLI\uFF08claude-code \u98CE\u683C\uFF09------------------------------------------
+# \u5728 RStudio \u63A7\u5236\u53F0/\u4EFB\u610F R \u4F1A\u8BDD\u91CC\u76F4\u63A5\u4E0E agent \u5BF9\u8BDD\uFF1Areadline \u5FAA\u73AF + ellmer \u6D41\u5F0F
+# \u8F93\u51FA + \u5DE5\u5177\u8C03\u7528\u8FC7\u7A0B\u56DE\u663E\u3002\u4E0E\u9762\u677F\u4E92\u4E0D\u4F9D\u8D56\uFF08\u63A7\u5236\u53F0\u8DD1 CLI \u65F6\uFF0Cbg \u9762\u677F\u5B50\u8FDB\u7A0B\u7167\u5E38\u72EC\u7ACB\uFF09\u3002
+# \u4EE3\u4EF7\uFF1A\u8FD0\u884C\u671F\u95F4\u63A7\u5236\u53F0\u88AB\u5360\u7528\uFF08\u540C gadget \u6A21\u5F0F\uFF09\uFF1BCtrl+C \u6216 /exit \u9000\u51FA\u3002
 
-# 启动横幅（ASCII 大字 + 状态行）。动画只在交互式会话播放；
-# options(daiRH.cli_banner_speed = 0) 可关闭延迟。
+# \u542F\u52A8\u6A2A\u5E45\uFF08ASCII \u5927\u5B57 + \u72B6\u6001\u884C\uFF09\u3002\u52A8\u753B\u53EA\u5728\u4EA4\u4E92\u5F0F\u4F1A\u8BDD\u64AD\u653E\uFF1B
+# options(daiRH.cli_banner_speed = 0) \u53EF\u5173\u95ED\u5EF6\u8FDF\u3002
 .dai_banner <- function(cfg) {
   art <- c(
     "  \u2588\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557  \u2588\u2588\u2557",
@@ -54,7 +54,7 @@
   }
 }
 
-# /命令：返回 "exit" 表示退出循环，"reset" 表示重建会话，其余为已处理
+# /\u547D\u4EE4\uFF1A\u8FD4\u56DE "exit" \u8868\u793A\u9000\u51FA\u5FAA\u73AF\uFF0C"reset" \u8868\u793A\u91CD\u5EFA\u4F1A\u8BDD\uFF0C\u5176\u4F59\u4E3A\u5DF2\u5904\u7406
 .dai_cli_command <- function(line) {
   parts <- strsplit(trimws(line), "[[:space:]]+")[[1]]
   cmd <- tolower(parts[[1]] %||% "")
@@ -137,8 +137,8 @@ dairh_cli <- function(cfg = dairh_config_get()) {
       next
     }
     t0 <- Sys.time()
-    # echo="output"（ellmer 用户界面默认档）：正文流式无前缀，工具调用渲染成
-    # "● [tool call] ..." + "⏺ #> 结果预览"；echo="all" 会给正文加 "< " 前缀且更吵
+    # echo="output"\uFF08ellmer \u7528\u6237\u754C\u9762\u9ED8\u8BA4\u6863\uFF09\uFF1A\u6B63\u6587\u6D41\u5F0F\u65E0\u524D\u7F00\uFF0C\u5DE5\u5177\u8C03\u7528\u6E32\u67D3\u6210
+    # "\u25CF [tool call] ..." + "\u23FA #> \u7ED3\u679C\u9884\u89C8"\uFF1Becho="all" \u4F1A\u7ED9\u6B63\u6587\u52A0 "< " \u524D\u7F00\u4E14\u66F4\u5435
     res <- tryCatch(
       agent$chat(line, echo = "output"),
       interrupt = function(e) {

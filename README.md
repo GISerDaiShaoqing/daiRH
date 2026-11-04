@@ -204,6 +204,14 @@ testthat::test_dir("path/to/daiRH/tests/testthat", package = "daiRH")
 ```
 
 代码结构见 `R/`：`config.R`（配置/预设）、`client.R`（provider 与模型列表）、
-`harness.R`（工具注册表/钩子/硬预算/trace，harness 核心）、`tools_agent.R`（8 个内置工具）、
+`harness.R`（工具注册表/钩子/硬预算/trace，harness 核心）、`tools_agent.R`（9 个内置工具）、
 `agent.R`（系统提示/会话组装）、`context.R`（RStudio 上下文）、
-`app_shiny.R`（面板与设置）、`addin.R`（Addin 入口，注册于 `inst/rstudio/addins.dcf`）。
+`app_shiny.R`（面板与设置）、`background.R`（后台模式与面板进程管理）、
+`cli.R`（控制台 CLI）、`addin.R`（Addin 入口，注册于 `inst/rstudio/addins.dcf`）。
+维护约定与常用命令见 [`AGENTS.md`](AGENTS.md)。
+
+## 作者
+
+**Shaoqing Dai**（[GISerDaiShaoqing](https://github.com/GISerDaiShaoqing)）
+· ORCID [0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728)
+· [个人主页](http://gisersqdai.top/mycv/)

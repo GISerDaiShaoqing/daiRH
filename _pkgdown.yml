@@ -1,0 +1,95 @@
+url: https://giserdaishaoqing.github.io/daiRH/
+
+home:
+  title: daiRH — RStudio LLM Agent
+  description: >
+    把能读写文件、运行代码、查文档的对话式编程 Agent 装进 RStudio Viewer 面板。
+    基于 ellmer + shinychat，支持任意 OpenAI 兼容端点（Ollama / DeepSeek / GLM / Kimi / OpenAI…）。
+  links:
+    - text: Ask a question
+      href: https://github.com/GISerDaiShaoqing/daiRH/discussions
+
+template:
+  bootstrap: 5
+  opengraph:
+    image:
+      src: man/figures/logo.png
+      alt: "daiRH logo"
+
+navbar:
+  title: daiRH
+  left:
+    - text: 函数参考
+      href: reference/index.html
+    - text: 版本记录
+      href: news/index.html
+  right:
+    - icon: fa-github
+      aria-label: GitHub
+      href: https://github.com/GISerDaiShaoqing/daiRH
+
+footer:
+  structure:
+    left: [developed_by, package]
+    right: [built_with]
+  components:
+    developed_by: >
+      由 [Shaoqing Dai](https://github.com/GISerDaiShaoqing)
+      · [ORCID 0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728)
+      · [个人主页](http://gisersqdai.top/mycv/) 开发
+
+reference:
+  - title: 启动与入口
+    desc: >
+      面板、设置 Addin 与 claude-code 风格的控制台 CLI 的入口函数。
+    contents:
+    - dairh_app
+    - dairh_addin_chat
+    - dairh_addin_settings
+    - dairh_cli
+    - dairh_quick_prompt
+  - title: Agent 与会话
+    desc: >
+      组装 Agent：构建对话客户端、注册内置工具、生成系统提示词。
+    contents:
+    - dairh_new_agent
+    - dairh_agent_tools
+    - dairh_client
+    - dairh_list_models
+  - title: 配置与端点
+    desc: >
+      配置持久化、模型列表自动发现、RStudio 上下文与面板能力桥诊断。
+    contents:
+    - dairh_config_get
+    - dairh_config_set
+    - dairh_bridge_test
+    - dairh_editor_context_text
+  - title: harness：自定义工具与钩子
+    desc: >
+      把项目特有的能力教给 Agent；pre/post 钩子拦截或改写每次工具调用。
+    contents:
+    - dairh_register_tool
+    - dairh_unregister_tool
+    - dairh_list_tools
+    - dairh_add_hook
+    - dairh_remove_hook
+  - title: 调用轨迹（trace）
+    desc: >
+      每次工具调用的参数、耗时、结果摘要与拦截原因，jsonl 落盘可回放。
+    contents:
+    - dairh_trace
+    - dairh_trace_path
+  - title: 面板进程管理
+    desc: >
+      后台模式的面板跑在独立子进程里；这两个函数负责重启与孤儿回收。
+    contents:
+    - dairh_panel_restart
+    - dairh_panel_stop
+  - title: 内部辅助（未导出）
+    desc: >
+      文档化但没有导出的内部函数；了解面板协议与系统提示词拼装时有用。
+    contents:
+    - dairh_base_dir
+    - dairh_bridge_start
+    - dairh_panel_ui
+    - dairh_system_prompt
