@@ -1,7 +1,7 @@
 # 注册自定义工具（扩展 Agent 能力）
 
 把一个 R 函数注册为 Agent 可调用的工具；下一次打开面板 （或同进程内再次
-[`dairh_new_agent()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_new_agent.md)
+[`dairh_new_agent()`](https://gisersqdai.top/daiRH/reference/dairh_new_agent.md)
 时生效）。与内置工具同名可覆盖 （需
 `overwrite = TRUE`），可用来替换默认行为。
 

@@ -16,7 +16,7 @@ dairh_remove_hook(stage, name)
 
 - name:
 
-  钩子名（[`dairh_add_hook()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_add_hook.md)
+  钩子名（[`dairh_add_hook()`](https://gisersqdai.top/daiRH/reference/dairh_add_hook.md)
   时指定或自动编号的那个）
 
 ## Value

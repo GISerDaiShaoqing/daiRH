@@ -10,8 +10,8 @@
 单回合硬步数预算 / jsonl trace）。三个前端共享同一套 Agent：Viewer 面板、
 经典 gadget、控制台 CLI（`dairh_cli()`）。
 
-- 发布渠道：GitHub `GISerDaiShaoqing/daiRH`，文档站
-  `https://giserdaishaoqing.github.io/daiRH/`（Pages，main 分支 /docs 目录）
+- 发布渠道：GitHub `GISerDaiShaoqing/daiRH`，文档站 `https://gisersqdai.top/daiRH/`
+  （GitHub Pages 自定义域名；**`docs/CNAME` 必须保持在库**，pkgdown 重建后要确认它没被清掉）
 - CI：GitHub Actions 四平台（windows/ubuntu/macos × R release/oldrel-1），
   `error-on: "warning"`——任何 WARNING 都会导致红，别只在本地跑通就算完
 

@@ -15,7 +15,7 @@ Description: An RStudio addin that provides an LLM agent chat panel with a
     background chat panel, a classic gadget, and a console CLI.
 License: MIT + file LICENSE
 Encoding: UTF-8
-URL: https://giserdaishaoqing.github.io/daiRH/, https://github.com/GISerDaiShaoqing/daiRH
+URL: https://gisersqdai.top/daiRH/, https://github.com/GISerDaiShaoqing/daiRH
 BugReports: https://github.com/GISerDaiShaoqing/daiRH/issues
 Depends:
     R (>= 4.1)

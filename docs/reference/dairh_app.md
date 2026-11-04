@@ -14,7 +14,7 @@ dairh_app(cfg = dairh_config_get())
 
 - cfg:
 
-  配置列表（[`dairh_config_get()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_config_get.md)）
+  配置列表（[`dairh_config_get()`](https://gisersqdai.top/daiRH/reference/dairh_config_get.md)）
 
 ## Value
 

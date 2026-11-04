@@ -75,7 +75,7 @@ ASCII 大字启动横幅（带动画）→ `daiRH ❯`
   （控制台会出现一行带时间戳的 `DaiRH 面板子进程已退出`）。
   启动/重启面板全程有进度反馈（“正在启动…（3~15 秒）” → “已就绪（用时 X
   秒）”）。 残留进程（含控制台 Restart R 之后句柄失效的孤儿面板）用
-  [`daiRH::dairh_panel_stop()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_panel_stop.md)
+  [`daiRH::dairh_panel_stop()`](https://gisersqdai.top/daiRH/reference/dairh_panel_stop.md)
   一键清掉——它会按启动时的 pid 登记回收孤儿，且只回收命令行带 callr
   脚本标记的面板进程， 不会误伤其他 R 进程。
 - **经典模式（`run_mode = "gadget"`）**：阻塞式，关掉窗口即结束，控制台在打开期间忙碌属正常。
@@ -100,7 +100,7 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 | `restrict_paths` | 文件工具是否限制在项目目录内（默认开） |
 | `system_prompt_extra` | 追加到系统提示的个性化要求 |
 | `bg_image` | 面板背景图（本地路径或 http(s) URL；留空 = 内置夜樱） |
-| `trace` | 是否记录工具调用轨迹（[`dairh_trace()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_trace.md) 查看；默认开） |
+| `trace` | 是否记录工具调用轨迹（[`dairh_trace()`](https://gisersqdai.top/daiRH/reference/dairh_trace.md) 查看；默认开） |
 | `tools_profile` | 工具脚本路径（启动时 source，注册自定义工具/钩子；后台模式必经通道） |
 
 > 网页版白嫖路线：本地起任意 “web → OpenAI 兼容” 网关，设置里 provider
@@ -224,7 +224,7 @@ testthat::test_dir("path/to/daiRH/tests/testthat", package = "daiRH")
 `app_shiny.R`（面板与设置）、`background.R`（后台模式与面板进程管理）、
 `cli.R`（控制台 CLI）、`addin.R`（Addin 入口，注册于
 `inst/rstudio/addins.dcf`）。 维护约定与常用命令见
-[`AGENTS.md`](https://giserdaishaoqing.github.io/daiRH/AGENTS.md)。
+[`AGENTS.md`](https://gisersqdai.top/daiRH/AGENTS.md)。
 
 ## 作者
 

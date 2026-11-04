@@ -17,7 +17,7 @@ dairh_client(cfg = dairh_config_get(), system_prompt = NULL)
 
 - cfg:
 
-  [`dairh_config_get()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_config_get.md)
+  [`dairh_config_get()`](https://gisersqdai.top/daiRH/reference/dairh_config_get.md)
   的配置列表
 
 - system_prompt:

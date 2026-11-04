@@ -9,11 +9,12 @@
 （控制台不被占用），每次工具调用经过统一治理层（注册表 / pre-post 钩子 /
 单回合硬步数预算 / jsonl trace）。三个前端共享同一套 Agent：Viewer
 面板、 经典 gadget、控制台
-CLI（[`dairh_cli()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_cli.md)）。
+CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 
 - 发布渠道：GitHub `GISerDaiShaoqing/daiRH`，文档站
-  `https://giserdaishaoqing.github.io/daiRH/`（Pages，main 分支 /docs
-  目录）
+  `https://gisersqdai.top/daiRH/` （GitHub Pages
+  自定义域名；**`docs/CNAME` 必须保持在库**，pkgdown
+  重建后要确认它没被清掉）
 - CI：GitHub Actions 四平台（windows/ubuntu/macos × R
   release/oldrel-1）， `error-on: "warning"`——任何 WARNING
   都会导致红，别只在本地跑通就算完
@@ -62,7 +63,7 @@ CLI（[`dairh_cli()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_c
 | `R/client.R` | provider→ellmer 客户端、模型列表、opencode 会话头 |
 | `R/harness.R` | 注册表、钩子、硬预算、trace 写入（harness 核心） |
 | `R/tools_agent.R` | 9 个内置工具（含 `.dai_path_guard` 路径限制闸） |
-| `R/agent.R` | 系统提示词、[`dairh_new_agent()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_new_agent.md) 组装 |
+| `R/agent.R` | 系统提示词、[`dairh_new_agent()`](https://gisersqdai.top/daiRH/reference/dairh_new_agent.md) 组装 |
 | `R/context.R` | RStudio 编辑器上下文/主会话桥 |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |

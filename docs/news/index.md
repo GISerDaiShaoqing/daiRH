@@ -24,20 +24,20 @@
 ## daiRH 0.2.0
 
 - **harness 层落地**（H = harness 名副其实）：
-  - 工具注册表：[`dairh_register_tool()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_register_tool.md)
+  - 工具注册表：[`dairh_register_tool()`](https://gisersqdai.top/daiRH/reference/dairh_register_tool.md)
     /
-    [`dairh_unregister_tool()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_unregister_tool.md)
+    [`dairh_unregister_tool()`](https://gisersqdai.top/daiRH/reference/dairh_unregister_tool.md)
     /
-    [`dairh_list_tools()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_list_tools.md)，可覆盖内置工具
+    [`dairh_list_tools()`](https://gisersqdai.top/daiRH/reference/dairh_list_tools.md)，可覆盖内置工具
   - 钩子：`dairh_add_hook("pre_tool"/"post_tool", ...)`
     拦截与改写每次工具调用
   - 单轮硬预算：`max_steps`
     不再只是提示词，超出直接拦截；用户下一条消息自动重置 （修复：ellmer
     把工具结果存成 role=“user” 且 [@text](https://github.com/text)
     为空的回合，旧的回合检测会误重置预算）
-  - 调用轨迹：[`dairh_trace()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_trace.md)
+  - 调用轨迹：[`dairh_trace()`](https://gisersqdai.top/daiRH/reference/dairh_trace.md)
     /
-    [`dairh_trace_path()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_trace_path.md)，jsonl
+    [`dairh_trace_path()`](https://gisersqdai.top/daiRH/reference/dairh_trace_path.md)，jsonl
     落盘（含参数/耗时/结果/拦截原因/session_reset）
   - `tools_profile`：跨进程自定义通道（后台面板子进程启动时 source）
 - **面板**：新增 🧹 清空对话按钮（清聊天记录 +
@@ -47,12 +47,12 @@
   （图拷入面板静态目录走同源 URL；shinychat 前端 sanitize 白名单只放行
   http/https 的 img src）
 - **控制台
-  CLI**：[`dairh_cli()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_cli.md)，claude-code
+  CLI**：[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)，claude-code
   风格启动横幅 + readline 循环 + ellmer
   流式回显（echo=“output”）；`/help` `/clear` `/tools` `/exit`
 - **面板进程管理加固**：启动全程进度反馈（“正在启动…（3~15
   秒）”→“已就绪（用时 X 秒）”）； stderr 镜像带时间戳；pid 登记文件 +
-  [`dairh_panel_stop()`](https://giserdaishaoqing.github.io/daiRH/reference/dairh_panel_stop.md)
+  [`dairh_panel_stop()`](https://gisersqdai.top/daiRH/reference/dairh_panel_stop.md)
   跨会话回收孤儿面板 （仅回收命令行带 callr 脚本标记的 R 进程，不误伤）
 
 ## daiRH 0.1.0
