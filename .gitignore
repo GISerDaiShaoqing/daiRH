@@ -1,0 +1,20 @@
+# R 项目常见本地产物
+.Rproj.user
+.Rhistory
+.RData
+.Renviron
+*.Rproj
+
+# 构建与检查产物
+/.Rbuildignore-local
+revdep/
+.check/
+.packaging/
+daiRH.Rcheck/
+*.tar.gz
+*.zip
+
+# 编辑器/系统
+.DS_Store
+Thumbs.db
+.zcode/

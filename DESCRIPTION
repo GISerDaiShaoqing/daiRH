@@ -1,0 +1,41 @@
+Package: daiRH
+Type: Package
+Title: daiRH: An Agent Chat Panel Harness for RStudio (OpenAI-Compatible)
+Version: 0.2.0
+Authors@R: person("Shaoqing", "Dai", email = "shaoqing.dai@outlook.com",
+    role = c("aut", "cre"))
+Description: An RStudio addin that provides an LLM agent chat panel with a
+    full harness layer. It can chat with an OpenAI-compatible LLM (Ollama,
+    DeepSeek, GLM, Kimi, ...), read/edit project files, run R code safely in
+    a callr subprocess, and fetch R documentation as tools. The harness adds
+    a tool registry with user-defined tools and hooks, a hard per-turn tool
+    budget, and jsonl call tracing, exposed through three frontends: a
+    background chat panel, a classic gadget, and a console CLI.
+License: MIT + file LICENSE
+Encoding: UTF-8
+URL: https://github.com/GISerDaiShaoqing/daiRH
+BugReports: https://github.com/GISerDaiShaoqing/daiRH/issues
+Depends:
+    R (>= 4.1)
+Imports:
+    base64enc,
+    callr,
+    crayon,
+    ellmer (>= 0.4.0),
+    htmltools,
+    httr2,
+    httpuv,
+    jsonlite,
+    later,
+    ps,
+    rstudioapi,
+    shinychat (>= 0.3.0),
+    shiny,
+    shinyjs,
+    utils
+Suggests:
+    testthat (>= 3.0.0),
+    withr
+Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

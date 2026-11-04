@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#f2eeff"/>
+      <stop offset="0.55" stop-color="#fdeef6"/>
+      <stop offset="1" stop-color="#f4f9ff"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.22" cy="0.18" r="0.45">
+      <stop offset="0" stop-color="#cfc6fb" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#cfc6fb" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.85" cy="0.75" r="0.5">
+      <stop offset="0" stop-color="#ffd6ec" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffd6ec" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moonGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7cf" stop-opacity="0.85"/>
+      <stop offset="0.55" stop-color="#fff7cf" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#fff7cf" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#glow1)"/>
+  <rect width="1600" height="1000" fill="url(#glow2)"/>
+
+  <!-- moon -->
+  <circle cx="1240" cy="200" r="180" fill="url(#moonGlow)"/>
+  <circle cx="1240" cy="200" r="72" fill="#fff3be" opacity="0.92"/>
+  <circle cx="1216" cy="182" r="12" fill="#f6e8a6" opacity="0.6"/>
+  <circle cx="1258" cy="216" r="8" fill="#f6e8a6" opacity="0.5"/>
+  <circle cx="1236" cy="230" r="5" fill="#f0e398" opacity="0.5"/>
+
+  <!-- sparkle stars -->
+  <g fill="#b9c3fb" opacity="0.65">
+    <path d="M180 150 l5 14 14 5 -14 5 -5 14 -5 -14 -14 -5 14 -5 z"/>
+    <path d="M420 90 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 z"/>
+    <path d="M680 170 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 z"/>
+    <path d="M960 110 l3.6 10 10 3.6 -10 3.6 -3.6 10 -3.6 -10 -10 -3.6 10 -3.6 z" opacity="0.8"/>
+    <path d="M1420 420 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 z" opacity="0.55"/>
+    <path d="M120 440 l3.6 10 10 3.6 -10 3.6 -3.6 10 -3.6 -10 -10 -3.6 10 -3.6 z" opacity="0.5"/>
+  </g>
+
+  <!-- shooting star -->
+  <g opacity="0.55">
+    <line x1="820" y1="120" x2="960" y2="168" stroke="#cdc3fc" stroke-width="3" stroke-linecap="round"/>
+    <line x1="820" y1="120" x2="900" y2="150" stroke="#efeaff" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- hills -->
+  <ellipse cx="300" cy="1080" rx="620" ry="220" fill="#dcd6f8" opacity="0.9"/>
+  <ellipse cx="1120" cy="1120" rx="700" ry="260" fill="#d2cdf5" opacity="0.85"/>
+  <ellipse cx="760" cy="1200" rx="900" ry="300" fill="#c8c8f2" opacity="0.8"/>
+  <g fill="#b9c4f0" opacity="0.5">
+    <ellipse cx="520" cy="960" rx="90" ry="18"/>
+    <ellipse cx="1060" cy="990" rx="130" ry="22"/>
+  </g>
+
+  <!-- drifting petals -->
+  <g fill="#f9b6dc">
+    <ellipse cx="200" cy="300" rx="14" ry="8" transform="rotate(-25 200 300)" opacity="0.62"/>
+    <ellipse cx="360" cy="220" rx="18" ry="10" transform="rotate(35 360 220)" opacity="0.5"/>
+    <ellipse cx="530" cy="330" rx="12" ry="7" transform="rotate(-60 530 330)" opacity="0.66"/>
+    <ellipse cx="720" cy="250" rx="20" ry="11" transform="rotate(20 720 250)" opacity="0.45"/>
+    <ellipse cx="900" cy="380" rx="14" ry="8" transform="rotate(-40 900 380)" opacity="0.6"/>
+    <ellipse cx="1090" cy="290" rx="16" ry="9" transform="rotate(55 1090 290)" opacity="0.52"/>
+    <ellipse cx="1300" cy="360" rx="12" ry="7" transform="rotate(-30 1300 360)" opacity="0.62"/>
+    <ellipse cx="1480" cy="250" rx="17" ry="9" transform="rotate(15 1480 250)" opacity="0.5"/>
+    <ellipse cx="280" cy="520" rx="11" ry="6" transform="rotate(-50 280 520)" opacity="0.5"/>
+    <ellipse cx="620" cy="580" rx="15" ry="8" transform="rotate(30 620 580)" opacity="0.44"/>
+    <ellipse cx="1000" cy="600" rx="13" ry="7" transform="rotate(-15 1000 600)" opacity="0.5"/>
+    <ellipse cx="1380" cy="560" rx="18" ry="10" transform="rotate(40 1380 560)" opacity="0.46"/>
+    <ellipse cx="760" cy="120" rx="12" ry="7" transform="rotate(-70 760 120)" opacity="0.55"/>
+    <ellipse cx="1140" cy="130" rx="10" ry="6" transform="rotate(10 1140 130)" opacity="0.5"/>
+  </g>
+</svg>
