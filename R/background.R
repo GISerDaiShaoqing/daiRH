@@ -85,42 +85,85 @@ dairh_bridge_start <- function() {
   step <- function() {
     if (!isTRUE(.dairh_bridge_env$pumping)) return(invisible(NULL))
     ticks_left <<- ticks_left - 1L
-    # \u5237\u65B0\u7F16\u8F91\u5668\u4E0A\u4E0B\u6587\u5FEB\u7167\uFF08\u6CF5\u88AB\u9A71\u52A8 = \u63A7\u5236\u53F0\u6709\u6D3B\u52A8\u8FB9\u754C\uFF09
+    # \u6574\u4F53\u515C\u5E95\uFF1A\u4EFB\u4F55\u4E00\u6B65\u70B8\u6389\u90FD\u4E0D\u80FD\u8BA9\u94FE\u65AD\u6389\u3002\u5B9E\u6D4B RStudio \u7A7A\u95F2\u65F6\u6572\u7A7A\u56DE\u8F66
+    # \u4E0D\u4FDD\u8BC1\u89E6\u53D1 later\uFF0C\u4E00\u65E6\u65AD\u94FE\u5FEB\u7167\u5C31\u6C38\u4E45\u51BB\u7ED3\uFF080.4 \u73B0\u573A\u4E8B\u6545\uFF09\uFF0C\u53EA\u80FD\u91CD\u542F\u9762\u677F\u3002
     tryCatch({
-      snap <- list(
-        time = format(Sys.time(), "%H:%M:%S"),
-        base_dir = dairh_base_dir(),
-        context = dairh_editor_context_text()
-      )
-      writeLines(jsonlite::toJSON(snap, auto_unbox = TRUE, null = "null"),
-        file.path(dir, "context-snapshot.json"), useBytes = TRUE)
+      .dairh_write_context_snapshot(dir)
+      reqs <- list.files(dir, pattern = "^req-.*\\.json$", full.names = TRUE)
+      for (rf in reqs) {
+        ok <- tryCatch({
+          j <- jsonlite::fromJSON(rf, simplifyVector = FALSE)
+          res <- .dairh_bridge_exec(j$op %||% "", j$args %||% list())
+          resp <- file.path(dir, paste0("resp-", sub("^req-", "", basename(rf))))
+          writeLines(jsonlite::toJSON(list(ok = TRUE, result = res),
+            auto_unbox = TRUE, null = "null"), resp, useBytes = TRUE)
+          TRUE
+        }, error = function(e) {
+          resp <- file.path(dir, paste0("resp-", sub("^req-", "", basename(rf))))
+          tryCatch(writeLines(jsonlite::toJSON(list(
+            ok = FALSE, error = conditionMessage(e)
+          ), auto_unbox = TRUE), resp, useBytes = TRUE), error = function(e2) NULL)
+          FALSE
+        })
+        tryCatch(file.remove(rf), error = function(e) NULL)
+        if (!ok) invisible(NULL)
+      }
     }, error = function(e) NULL)
-    reqs <- tryCatch(
-      list.files(dir, pattern = "^req-.*\\.json$", full.names = TRUE),
-      error = function(e) character(0)
-    )
-    for (rf in reqs) {
-      ok <- tryCatch({
-        j <- jsonlite::fromJSON(rf, simplifyVector = FALSE)
-        res <- .dairh_bridge_exec(j$op %||% "", j$args %||% list())
-        resp <- file.path(dir, paste0("resp-", sub("^req-", "", basename(rf))))
-        writeLines(jsonlite::toJSON(list(ok = TRUE, result = res),
-          auto_unbox = TRUE, null = "null"), resp, useBytes = TRUE)
-        TRUE
-      }, error = function(e) {
-        resp <- file.path(dir, paste0("resp-", sub("^req-", "", basename(rf))))
-        tryCatch(writeLines(jsonlite::toJSON(list(
-          ok = FALSE, error = conditionMessage(e)
-        ), auto_unbox = TRUE), resp, useBytes = TRUE), error = function(e2) NULL)
-        FALSE
-      })
-      tryCatch(file.remove(rf), error = function(e) NULL)
-      if (!ok) invisible(NULL)
-    }
     if (ticks_left > 0L) later::later(step, interval)
   }
   later::later(step, interval)
   invisible(NULL)
+}
+
+# \u4E3B\u4F1A\u8BDD\u4FA7\uFF1A\u7ACB\u5373\u628A\u7F16\u8F91\u5668\u4E0A\u4E0B\u6587\u5199\u6210\u5FEB\u7167\uFF08pump \u6BCF tick \u4E0E addin \u76F4\u53D1\u901A\u9053\u5171\u7528\uFF09
+.dairh_write_context_snapshot <- function(dir = .dairh_bridge_dir()) {
+  tryCatch({
+    snap <- list(
+      time = format(Sys.time(), "%H:%M:%S"),
+      base_dir = dairh_base_dir(),
+      context = dairh_editor_context_text()
+    )
+    writeLines(jsonlite::toJSON(snap, auto_unbox = TRUE, null = "null"),
+      file.path(dir, "context-snapshot.json"), useBytes = TRUE)
+    TRUE
+  }, error = function(e) FALSE)
+}
+
+# \u4E3B\u4F1A\u8BDD\u4FA7\uFF1A\u5199\u5165\u300C\u5F85\u53D1\u9001\u63D0\u793A\u300D\uFF08addin \u9009\u4E2D\u76F4\u53D1\u901A\u9053\uFF09\u3002\u9762\u677F\u5B50\u8FDB\u7A0B\u7684 400ms
+# shiny \u8F6E\u8BE2\u8D1F\u8D23\u6D88\u8D39\u2014\u2014\u4E0D\u4F9D\u8D56 later/\u63A7\u5236\u53F0\u6D3B\u52A8\uFF0C\u8FD9\u662F\u9009\u533A\u8BB2\u89E3\u7684\u53EF\u9760\u8DEF\u5F84\u3002
+.dairh_pending_prompt_write <- function(text) {
+  dir <- .dairh_bridge_dir()
+  dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  f <- file.path(dir, paste0("pending-prompt-",
+    format(Sys.time(), "%H%M%OS3"), "-", as.integer(runif(1, 1, 1e6)), ".json"))
+  writeLines(jsonlite::toJSON(list(text = text, ts = format(Sys.time())),
+    auto_unbox = TRUE, null = "null"), f, useBytes = TRUE)
+  invisible(f)
+}
+
+# \u9762\u677F\u5B50\u8FDB\u7A0B\u4FA7\uFF1A\u53D6\u8D70\u4E00\u6761\u5F85\u53D1\u9001\u63D0\u793A\u3002\u6539\u540D\uFF08.taken\uFF09\u62A2\u5360\u9632\u591A\u9762\u677F\u91CD\u590D\u6D88\u8D39\uFF1B
+# \u8D85\u9F84\u6587\u4EF6\u76F4\u63A5\u6E05\u6389\u3002\u65E0\u6587\u4EF6/\u88AB\u62A2\u5148/\u5185\u5BB9\u975E\u6CD5\u90FD\u8FD4\u56DE NULL\u3002
+.dairh_take_pending_prompt <- function(max_age_s = 60) {
+  dir <- getOption("daiRH.bridge_dir") %||% ""
+  if (!nzchar(dir) || !dir.exists(dir)) return(NULL)
+  fs <- list.files(dir, pattern = "^pending-prompt-.*[.]json$", full.names = TRUE)
+  if (!length(fs)) return(NULL)
+  info <- file.info(fs)
+  ord <- order(info$mtime, decreasing = TRUE)
+  fs <- fs[ord]
+  for (f in fs[-1L]) tryCatch(file.remove(f), error = function(e) NULL)
+  if (is.na(info$mtime[ord][1]) ||
+      difftime(Sys.time(), info$mtime[ord][1], units = "secs") > max_age_s) {
+    tryCatch(file.remove(fs[1]), error = function(e) NULL)
+    return(NULL)
+  }
+  target <- paste0(fs[1], ".taken")
+  if (!isTRUE(suppressWarnings(file.rename(fs[1], target)))) return(NULL)
+  on.exit(tryCatch(unlink(target), error = function(e) NULL), add = TRUE)
+  j <- tryCatch(jsonlite::fromJSON(target, simplifyVector = FALSE),
+    error = function(e) NULL)
+  txt <- j$text
+  if (is.character(txt) && length(txt) == 1L && nzchar(txt)) txt else NULL
 }
 
 # \u4E3B\u4F1A\u8BDD\u4FA7\u6267\u884C\u5668\uFF1Aop \u2192 \u5728 RStudio \u91CC\u771F\u6B63\u5E72\u6D3B
@@ -611,7 +654,8 @@ dairh_panel_stop <- function() {
 #' \u505C\u6240\u6709\u9762\u677F\u5B50\u8FDB\u7A0B\uFF0C\u5E76\u6309\u5F53\u524D\u914D\u7F6E\u91CD\u65B0\u6253\u5F00\uFF08\u540E\u53F0\u6A21\u5F0F
 #' \u4F1A\u81EA\u52A8\u91CD\u5F00 Viewer\uFF09\u3002\u7ED9\u9762\u677F\u957F\u65F6\u95F4\u4E0D\u54CD\u5E94\u3001\u5B50\u8FDB\u7A0B\u610F\u5916\u9000\u51FA\u6216
 #' \u53EA\u60F3\u6362\u53D1\u5168\u65B0\u4F1A\u8BDD\u65F6\u7528\uFF0C\u76F8\u5F53\u4E8E"panel_stop + \u76F4\u63A5\u518D\u6253\u5F00"\u3002
-#' \u5386\u53F2\u6D88\u606F\u4E0D\u540C\u5F00\u65B0\u9762\u677F\uFF08\u9762\u677F\u4E0D\u6301\u4E45\u5316\u804A\u8BB0\uFF09\u3002
+#' \u4F1A\u8BDD\u5386\u53F2\u4E0D\u518D\u4E22\u5931\uFF1A\u62BD\u5C49\u5B58\u50A8\u5728\u7528\u6237\u6570\u636E\u76EE\u5F55\uFF08cfg$history \u5F00\u542F\u65F6\uFF09\uFF0C
+#' \u91CD\u542F\u540E\u91CD\u65B0\u6253\u5F00\u9762\u677F\u4F1A\u81EA\u52A8\u7EED\u63A5\u6700\u8FD1\u4E00\u6B21\u4F1A\u8BDD\u3002
 #'
 #' @return \u9690\u5F0F\u8FD4\u56DE\u65B0\u542F\u52A8\u7684\u9762\u677F\u5B50\u8FDB\u7A0B\u53E5\u67B0
 #' @examples

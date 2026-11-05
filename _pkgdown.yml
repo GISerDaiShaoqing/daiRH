@@ -41,11 +41,12 @@ footer:
 reference:
   - title: 启动与入口
     desc: >
-      面板、设置 Addin 与 claude-code 风格的控制台 CLI 的入口函数。
+      面板、设置 Addin、选区直发 Addin 与 claude-code 风格的控制台 CLI 的入口函数。
     contents:
     - dairh_app
     - dairh_addin_chat
     - dairh_addin_settings
+    - dairh_addin_send_selection
     - dairh_cli
     - dairh_quick_prompt
   - title: Agent 与会话

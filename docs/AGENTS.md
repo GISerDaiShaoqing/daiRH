@@ -74,8 +74,9 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 ## 常用流程
 
 ``` sh
-# 1) 单测（本地基线：FAIL 0 | WARN 1 | PASS 163；WARN 是已知良性项）
-Rscript -e "library(daiRH); testthat::test_dir('tests/testthat', package='daiRH')"
+# 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
+#    已安装旧版——0.4 曾因此假红）。本地基线：FAIL 0 | WARN 1 | PASS 178
+Rscript -e "testthat::test_local('<包目录>')"
 
 # 2) 装进系统库（Windows 例）
 R.exe --vanilla CMD INSTALL --no-multiarch -l <R 库目录> <包目录>

@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -92,7 +92,9 @@
 <strong>Tools → Addins → DaiRH Chat</strong>：在 Viewer 面板打开对话助手</li>
 <li>
 <strong>Tools → Addins → DaiRH Settings</strong>：配置 provider / 模型 / Key</li>
-<li>面板顶部两个图标：<strong>🧹 清空对话</strong>（嫌对话长了就点它：清聊天记录 + 重置 Agent 会话与单轮硬预算，不重启面板子进程，立即开新会话）和 <strong>⚙ 设置</strong>；四个快捷按钮：
+<li>
+<strong>（强烈建议绑快捷键）Tools → Addins → daiRH Send Selection</strong>：选中代码后 一键直发面板讲解（Tools → Modify Keyboard Shortcuts 搜 daiRH 绑定）。 面板里的”讲解选中代码”按钮走快照式上下文，快照只在控制台<strong>运行真实代码</strong> 时刷新（空回车不保证触发）</li>
+<li>面板顶部两个图标：<strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与单轮硬预算， 不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时找回）和 <strong>⚙ 设置</strong>；聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
 <ul>
 <li>
 <strong>解释当前文件</strong> / <strong>讲解选中代码</strong> / <strong>审查当前文件</strong> / <strong>R 文档问答</strong>
@@ -112,7 +114,7 @@
 <p>不想开面板？控制台里直接跑：</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">daiRH</span><span class="fu">::</span><span class="fu"><a href="reference/dairh_cli.html">dairh_cli</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>ASCII 大字启动横幅（带动画）→ <code>daiRH ❯</code> 提示符循环：任务直接敲，模型流式输出、 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 <code>/help</code> 看命令，<code>/clear</code> 开新会话，<code>/tools</code> 列工具，<code>/exit</code> 或 Ctrl+C 退出。 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。</p>
+<p>ASCII 大字启动横幅（带动画）→ <code>daiRH ❯</code> 提示符循环：任务直接敲，模型流式输出、 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 <code>/help</code> 看命令，<code>/clear</code> 开新会话，<code>/tools</code> 列工具，<code>/exit</code> 退出。 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。</p>
 </div>
 <div class="section level3">
 <h3 id="关闭助手运行模式说明">关闭助手（运行模式说明）<a class="anchor" aria-label="anchor" href="#%E5%85%B3%E9%97%AD%E5%8A%A9%E6%89%8B%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F%E8%AF%B4%E6%98%8E"></a>
@@ -194,6 +196,14 @@
 <td><code>tools_profile</code></td>
 <td>工具脚本路径（启动时 source，注册自定义工具/钩子；后台模式必经通道）</td>
 </tr>
+<tr>
+<td><code>history</code></td>
+<td>会话历史抽屉（仅后台面板）：多会话切换、重开面板自动续接最近会话（默认开）</td>
+</tr>
+<tr>
+<td><code>history_title</code></td>
+<td>LLM 给会话自动起标题（看前两轮对话，多一次调用；默认开）</td>
+</tr>
 </tbody>
 </table>
 <blockquote>
@@ -260,10 +270,14 @@
 <span><span class="fu"><a href="reference/dairh_add_hook.html">dairh_add_hook</a></span><span class="op">(</span><span class="st">"pre_tool"</span>, <span class="va">...</span>, name <span class="op">=</span> <span class="st">"guard-env"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="会话历史抽屉后台面板">会话历史抽屉（后台面板）<a class="anchor" aria-label="anchor" href="#%E4%BC%9A%E8%AF%9D%E5%8E%86%E5%8F%B2%E6%8A%BD%E5%B1%89%E5%90%8E%E5%8F%B0%E9%9D%A2%E6%9D%BF"></a>
+</h3>
+<p>后台面板聊天区左上角的时钟按钮打开多会话抽屉：列表 / 搜索 / 切换 / 新建 / 重命名 / 删除。对话轮次（含工具调用链）持久化在 <code>tools::R_user_dir("daiRH", "data")/conversations</code>，重开面板自动续接最近一次 会话；单轮硬预算按新会话重新计。设置里 <code>history</code> 可整体关掉，<code>history_title</code> 控制 LLM 自动命名。gadget / CLI 模式不持久化。</p>
+</div>
+<div class="section level3">
 <h3 id="路线图">路线图<a class="anchor" aria-label="anchor" href="#%E8%B7%AF%E7%BA%BF%E5%9B%BE"></a>
 </h3>
 <ul>
-<li>会话持久化 / 恢复（关掉面板后接着聊）</li>
 <li>子代理委派（大任务拆给专职小 Agent）</li>
 <li>钩子参数改写（当前支持拦截，暂不支持改参数）</li>
 </ul>

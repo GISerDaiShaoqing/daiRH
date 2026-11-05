@@ -36,9 +36,17 @@ devtools::install("path/to/daiRH")
 
 1.  **Tools → Addins → DaiRH Chat**：在 Viewer 面板打开对话助手
 2.  **Tools → Addins → DaiRH Settings**：配置 provider / 模型 / Key
-3.  面板顶部两个图标：**🧹 清空对话**（嫌对话长了就点它：清聊天记录 +
-    重置 Agent 会话与单轮硬预算，不重启面板子进程，立即开新会话）和 **⚙
-    设置**；四个快捷按钮：
+3.  **（强烈建议绑快捷键）Tools → Addins → daiRH Send
+    Selection**：选中代码后 一键直发面板讲解（Tools → Modify Keyboard
+    Shortcuts 搜 daiRH 绑定）。
+    面板里的”讲解选中代码”按钮走快照式上下文，快照只在控制台**运行真实代码**
+    时刷新（空回车不保证触发）
+4.  面板顶部两个图标：**🧹 清空对话**（= 开新会话：重置 Agent
+    会话与单轮硬预算，
+    不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时找回）和
+    **⚙ 设置**；聊天区左上角 **🕘
+    历史抽屉**（后台模式）：多会话列表/搜索/切换，
+    重开面板自动续接最近一次会话；四个快捷按钮：
     - **解释当前文件** / **讲解选中代码** / **审查当前文件** / **R
       文档问答**
 
@@ -64,7 +72,7 @@ daiRH::dairh_cli()
 ASCII 大字启动横幅（带动画）→ `daiRH ❯`
 提示符循环：任务直接敲，模型流式输出、
 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 `/help`
-看命令，`/clear` 开新会话，`/tools` 列工具，`/exit` 或 Ctrl+C 退出。
+看命令，`/clear` 开新会话，`/tools` 列工具，`/exit` 退出。
 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace
 与面板完全同一套 harness。
 
@@ -102,6 +110,8 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 | `bg_image` | 面板背景图（本地路径或 http(s) URL；留空 = 内置夜樱） |
 | `trace` | 是否记录工具调用轨迹（[`dairh_trace()`](https://gisersqdai.top/daiRH/reference/dairh_trace.md) 查看；默认开） |
 | `tools_profile` | 工具脚本路径（启动时 source，注册自定义工具/钩子；后台模式必经通道） |
+| `history` | 会话历史抽屉（仅后台面板）：多会话切换、重开面板自动续接最近会话（默认开） |
+| `history_title` | LLM 给会话自动起标题（看前两轮对话，多一次调用；默认开） |
 
 > 网页版白嫖路线：本地起任意 “web → OpenAI 兼容” 网关，设置里 provider
 > 选 `OpenAI 兼容`、`base_url` 指过去即可，插件零改动。
@@ -186,9 +196,17 @@ dairh_register_tool("load_my_data", ..., overwrite = TRUE)
 dairh_add_hook("pre_tool", ..., name = "guard-env")
 ```
 
+### 会话历史抽屉（后台面板）
+
+后台面板聊天区左上角的时钟按钮打开多会话抽屉：列表 / 搜索 / 切换 / 新建
+/ 重命名 / 删除。对话轮次（含工具调用链）持久化在
+`tools::R_user_dir("daiRH", "data")/conversations`，重开面板自动续接最近一次
+会话；单轮硬预算按新会话重新计。设置里 `history`
+可整体关掉，`history_title` 控制 LLM 自动命名。gadget / CLI
+模式不持久化。
+
 ### 路线图
 
-- 会话持久化 / 恢复（关掉面板后接着聊）
 - 子代理委派（大任务拆给专职小 Agent）
 - 钩子参数改写（当前支持拦截，暂不支持改参数）
 
@@ -237,7 +255,8 @@ Dai**（[GISerDaiShaoqing](https://github.com/GISerDaiShaoqing)） · ORCID
 
 ## 启动与入口
 
-面板、设置 Addin 与 claude-code 风格的控制台 CLI 的入口函数。
+面板、设置 Addin、选区直发 Addin 与 claude-code 风格的控制台 CLI
+的入口函数。
 
 - [`dairh_app()`](https://gisersqdai.top/daiRH/reference/dairh_app.md) :
   构建面板（ui + server）
@@ -245,6 +264,8 @@ Dai**（[GISerDaiShaoqing](https://github.com/GISerDaiShaoqing)） · ORCID
   : 打开 DaiRH 聊天助手面板（RStudio Addin）
 - [`dairh_addin_settings()`](https://gisersqdai.top/daiRH/reference/dairh_addin_settings.md)
   : 打开 DaiRH 设置对话框（RStudio Addin）
+- [`dairh_addin_send_selection()`](https://gisersqdai.top/daiRH/reference/dairh_addin_send_selection.md)
+  : 把选中的代码一键发送到 DaiRH 面板（RStudio Addin）
 - [`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md) :
   在控制台里直接与 DaiRH Agent 对话（CLI 模式）
 - [`dairh_quick_prompt()`](https://gisersqdai.top/daiRH/reference/dairh_quick_prompt.md)

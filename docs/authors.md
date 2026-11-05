@@ -12,13 +12,13 @@ Source:
 [`DESCRIPTION`](https://github.com/GISerDaiShaoqing/daiRH/blob/HEAD/DESCRIPTION)
 
 Dai S (2026). *daiRH: daiRH: An Agent Chat Panel Harness for RStudio
-(OpenAI-Compatible)*. R package version 0.3.0,
+(OpenAI-Compatible)*. R package version 0.4.0,
 <https://gisersqdai.top/daiRH/>.
 
     @Manual{,
       title = {daiRH: daiRH: An Agent Chat Panel Harness for RStudio (OpenAI-Compatible)},
       author = {Shaoqing Dai},
       year = {2026},
-      note = {R package version 0.3.0},
+      note = {R package version 0.4.0},
       url = {https://gisersqdai.top/daiRH/},
     }

@@ -2,8 +2,8 @@
 
 claude-code 风格：启动横幅（带动画）+ readline 循环 + ellmer
 流式输出（工具调用过程回显）。运行在当前 R 会话（RStudio
-控制台或终端），期间控制台被占用；`/exit` 或 Ctrl+C 退出。
-硬预算/钩子/trace 与面板完全同一套 harness。
+控制台或终端），期间控制台被占用；`/exit` 退出。 硬预算/钩子/trace
+与面板完全同一套 harness。
 
 ## Usage
 

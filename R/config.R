@@ -94,7 +94,9 @@ dairh_config_default <- function() {
     system_prompt_extra = "",
     bg_image = "",
     trace = TRUE,
-    tools_profile = ""
+    tools_profile = "",
+    history = TRUE,
+    history_title = TRUE
   )
 }
 

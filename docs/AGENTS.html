@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,17 +95,18 @@
 </tr></tbody></table></div>
 <div class="section level2">
 <h2 id="常用流程">常用流程<a class="anchor" aria-label="anchor" href="#%E5%B8%B8%E7%94%A8%E6%B5%81%E7%A8%8B"></a></h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># 1) 单测（本地基线：FAIL 0 | WARN 1 | PASS 163；WARN 是已知良性项）</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"library(daiRH); testthat::test_dir('tests/testthat', package='daiRH')"</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># 2) 装进系统库（Windows 例）</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co"># 3) 手改了 roxygen 注释之后</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co"># 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#    已安装旧版——0.4 曾因此假红）。本地基线：FAIL 0 | WARN 1 | PASS 178</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"testthat::test_local('&lt;包目录&gt;')"</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co"># 2) 装进系统库（Windows 例）</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co"># 3) 手改了 roxygen 注释之后</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co"># 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="依赖升级适配清单每次-ellmershinychatshiny-大版本升级照这个走">依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）<a class="anchor" aria-label="anchor" href="#%E4%BE%9D%E8%B5%96%E5%8D%87%E7%BA%A7%E9%80%82%E9%85%8D%E6%B8%85%E5%8D%95%E6%AF%8F%E6%AC%A1-ellmershinychatshiny-%E5%A4%A7%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E7%85%A7%E8%BF%99%E4%B8%AA%E8%B5%B0"></a></h2>

@@ -1,9 +1,14 @@
-Name: DAILLM Chat
-Description: Open the DAILLM LLM agent chat panel (in the RStudio Viewer pane)
+Name: daiRH Chat
+Description: Open the daiRH agent chat panel (in the RStudio Viewer pane)
 Binding: dairh_addin_chat
 Interactive: true
 
-Name: DAILLM Settings
-Description: Configure DAILLM (provider / model / API key / safety switches)
+Name: daiRH Settings
+Description: Configure daiRH (provider / model / API key / safety switches)
 Binding: dairh_addin_settings
+Interactive: true
+
+Name: daiRH Send Selection
+Description: Send the selected code to the daiRH panel and ask the agent to explain it
+Binding: dairh_addin_send_selection
 Interactive: true

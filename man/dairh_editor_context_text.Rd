@@ -15,5 +15,5 @@ dairh_editor_context_text(max_lines = 160)
 }
 \description{
 生成给 LLM 看的上下文摘要：文件路径与内容（截断）、选区文本与行号。
-不在 RStudio 中时返回提示文本。
+未保存的无标题文档同样支持（直接读内存内容）；不在 RStudio 中时返回提示文本。
 }

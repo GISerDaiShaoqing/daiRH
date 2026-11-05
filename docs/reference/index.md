@@ -2,7 +2,8 @@
 
 ## 启动与入口
 
-面板、设置 Addin 与 claude-code 风格的控制台 CLI 的入口函数。
+面板、设置 Addin、选区直发 Addin 与 claude-code 风格的控制台 CLI
+的入口函数。
 
 - [`dairh_app()`](https://gisersqdai.top/daiRH/reference/dairh_app.md) :
   构建面板（ui + server）
@@ -10,6 +11,8 @@
   : 打开 DaiRH 聊天助手面板（RStudio Addin）
 - [`dairh_addin_settings()`](https://gisersqdai.top/daiRH/reference/dairh_addin_settings.md)
   : 打开 DaiRH 设置对话框（RStudio Addin）
+- [`dairh_addin_send_selection()`](https://gisersqdai.top/daiRH/reference/dairh_addin_send_selection.md)
+  : 把选中的代码一键发送到 DaiRH 面板（RStudio Addin）
 - [`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md) :
   在控制台里直接与 DaiRH Agent 对话（CLI 模式）
 - [`dairh_quick_prompt()`](https://gisersqdai.top/daiRH/reference/dairh_quick_prompt.md)

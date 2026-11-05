@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -29,6 +29,25 @@
       <small>Source: <a href="https://github.com/GISerDaiShaoqing/daiRH/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="dairh-040">daiRH 0.4.0<a class="anchor" aria-label="anchor" href="#dairh-040"></a></h2>
+<ul><li>
+<strong>会话持久化（多会话历史抽屉）</strong>：后台面板接入 shinychat 0.5 的会话存储—— 聊天区左上角时钟按钮打开抽屉，可列出 / 搜索 / 切换 / 新建 / 重命名 / 删除 会话；重开面板自动续接最近一次会话。对话轮次（含工具调用链）经 ellmer record/replay 重水合进当前 Agent；治理层状态（单轮硬预算等）按新会话重新计。
+<ul><li>存储位置：<code>tools::R_user_dir("daiRH", "data")/conversations</code>（用户数据目录， 不进项目目录）</li>
+<li>面板端口随机会让 shinychat 的浏览器令牌漂移（localStorage 按 origin 隔离）， 故固定 <code>scope="daiRH"</code>，并用官方 <code>_history_select</code> 输入通道实现自动续接</li>
+<li>新配置项：<code>history</code>（默认开）、<code>history_title</code>（LLM 看前两轮对话给会话起 标题，默认开，关掉可省一次调用）；设置弹窗高级区同步新增两个开关</li>
+<li>「清空对话」改为”开新会话”：当前会话先存入抽屉再开新的（原先直接清掉、 不可恢复）；gadget / CLI 模式维持原行为（不持久化）</li>
+<li>已知边界：面板主动推送的绘图消息属 UI 内容，不随会话存档恢复</li>
+</ul></li>
+<li>
+<strong>Addins 菜单更名</strong>：<code>DAILLM Chat / DAILLM Settings</code> → <code>daiRH Chat / daiRH   Settings</code>（<code>inst/rstudio/addins.dcf</code>；config.json 的旧包迁移逻辑不受影响）</li>
+<li>
+<strong>面板体验修复（本地测试反馈）</strong>：面板页整页改 flex 布局，页面级滚动条退场 （此前 <code>calc(100vh-150px)</code> 预留在紧凑视口下会溢出）；输入框（tiptap 编辑器） 多行后自身滚动条不再压住发送按钮；修复”讲解选中代码”的选区自 0.2 起一直 失效的行号 bug（<code>$rE</code> 恒为 NULL → <code>range$start$row</code>），并支持<strong>未保存的 无标题文档</strong>（内容与选区直接读内存）；设置里的背景图新增”从电脑选图” 文件选择器（副本存入 daiRH 数据目录以持久化，≤ 8MB）。</li>
+<li>
+<strong>选区讲解可靠性重构</strong>：实测 RStudio 空闲时敲空回车不会触发主会话 later 回调，快照式上下文可能滞留旧内容（模型会正确拒绝并提示，但用户无解）。 新增加载项 <strong>daiRH Send Selection</strong>：在主会话内直接读取源码编辑器选区并 一键直发面板（约半秒自动提交），彻底绕开快照刷新依赖；快照改用 <code>getSourceEditorContext()</code> 优先（避免控制台焦点劫持”当前文件”语义）； pump 循环整体兜底防断链（快照曾因此冻结 40 分钟）。</li>
+<li>
+<strong>杂项</strong>：清空横幅文案修正（“聊天记录已清空”在历史模式下不再准确）； 维护手册的单测命令改为 <code><a href="https://testthat.r-lib.org/reference/test_package.html" class="external-link">testthat::test_local()</a></code>（原 <code>library()+test_dir()</code> 实际测的是已安装旧版）</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="dairh-030">daiRH 0.3.0<a class="anchor" aria-label="anchor" href="#dairh-030"></a></h2>
 <ul><li>

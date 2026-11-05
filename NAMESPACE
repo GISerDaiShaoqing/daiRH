@@ -2,6 +2,7 @@
 
 export(dairh_add_hook)
 export(dairh_addin_chat)
+export(dairh_addin_send_selection)
 export(dairh_addin_settings)
 export(dairh_agent_tools)
 export(dairh_app)
