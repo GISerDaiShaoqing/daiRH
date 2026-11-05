@@ -91,6 +91,12 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 4. 新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免
    "UI 一套状态、Agent 另一套"的错位。
 
+**shinychat 避坑（实测）**：其客户端 markdown 管道允许 `<img>` 标签通过但会
+剥掉 `data:` 协议的 src（imgCount=1、naturalWidth=0）——greeting/markdown
+文本里内嵌图不可行。聊天插图走原生 contents 图片通道（show_plot 即此）；
+静态 Logo 放面板自家标记（`.dai_title_logo()`，data URI 复用
+`.dai_image_data_uri()` 并缓存）。
+
 ## 发布清单
 
 1. 改名包：`DESCRIPTION` Version → NEWS.md 顶部加段 → 测试全绿 →

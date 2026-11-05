@@ -253,6 +253,32 @@
   )
 }
 
+# \u5305 Logo\uff08\u5934\u90E8\u6807\u9898\u53F3\u4FA7\uFF09\uff1aman/figures/logo.png \u7ECF data URI \u5185\u8054\uFF08\u590D\u7528 .dai_image_data_uri\uFF09\u3002
+# URI \u7F13\u5B58\uFF0C\u6BCF\u8FDB\u7A0B\u53EA\u7F16\u4E00\u6B21\uFF1B\u627E\u4E0D\u5230\u6587\u4EF6\u65F6\u8FD4\u56DE\u7A7A\u5B57\u7B26\u4E32\uFF0C\u4E0D\u5F71\u54CD\u9762\u677F\u5176\u5B83\u529F\u80FD\u3002
+.dai_logo_env <- new.env(parent = emptyenv())
+
+.dai_logo_uri <- function() {
+  if (!is.null(.dai_logo_env$uri)) return(.dai_logo_env$uri)
+  .dai_logo_env$uri <- ""
+  path <- system.file("man", "figures", "logo.png", package = "daiRH")
+  if (nzchar(path) && file.exists(path)) {
+    uri <- tryCatch(.dai_image_data_uri(path), error = function(e) "")
+    .dai_logo_env$uri <- uri
+  }
+  .dai_logo_env$uri
+}
+
+# \u6807\u9898\u53F3\u4FA7\u7684\u5305 Logo\uFF08img + data URI\uFF09\uFF1A\u81EA\u5BB6\u6807\u8BB0\u4E0D\u7ECF shinychat \u7684 markdown
+# \u51C0\u5316\uFF08\u5B9E\u6D4B\u5B83\u4F1A\u5265\u6389 data: \u534F\u8BAE\u7684 src\uFF09\uFF0C\u6240\u4EE5\u56FA\u5B9A\u653E\u5728\u5934\u90E8\u3002
+.dai_title_logo <- function(px = 28) {
+  uri <- .dai_logo_uri()
+  if (!nzchar(uri)) return(NULL)
+  shiny::tags$img(
+    src = uri, alt = "daiRH", class = "dai-title-logo",
+    style = sprintf("height:%dpx;width:auto;border-radius:7px;box-shadow:0 2px 6px rgba(80,84,180,.16);", px)
+  )
+}
+
 # \u5934\u9876\u5C0F\u673A\u5668\u4EBA\u5409\u7965\u7269\uFF08\u5185\u8054\u7EAF ASCII\uFF0C\u56E0\u5B58\u5728 HTML \u5B57\u7B26\u4E32\u4E2D\uFF09
 .dai_mascot_svg <- function() {
   shiny::HTML(paste(
@@ -334,7 +360,7 @@ dairh_panel_ui <- function(cfg = NULL) {
       class = "dai-wrap",
       shiny::div(
         class = "dai-head",
-        shiny::span(class = "dai-title", .dai_mascot_svg(), "DaiRH \u52A9\u624B"),
+        shiny::span(class = "dai-title", .dai_mascot_svg(), "DaiRH \u52A9\u624B", .dai_title_logo()),
         shiny::uiOutput("client_info", inline = TRUE),
         shinyjs::hidden(shiny::div(style = "flex:1", class = "flex-spacer")),
         shiny::actionLink("btn_clear", "", shiny::icon("eraser"),
