@@ -97,6 +97,8 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 静态 Logo 放面板自家标记（`.dai_title_logo()`，data URI 复用
 `.dai_image_data_uri()` 并缓存）。
 
+**安装树坑（实测）**：R 装包时不会把 `man/` 拷进安装树——`system.file("man","figures","logo.png")` 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：`man/figures/`（源码位置，load_all 可见）+ `inst/figures/`（硬拷贝，安装树一定在），查找函数两条路径都试。
+
 ## 发布清单
 
 1. 改名包：`DESCRIPTION` Version → NEWS.md 顶部加段 → 测试全绿 →

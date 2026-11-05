@@ -253,17 +253,27 @@
   )
 }
 
-# \u5305 Logo\uff08\u5934\u90E8\u6807\u9898\u53F3\u4FA7\uFF09\uff1aman/figures/logo.png \u7ECF data URI \u5185\u8054\uFF08\u590D\u7528 .dai_image_data_uri\uFF09\u3002
+# \u5305 Logo\uff08\u5934\u90E8\u6807\u9898\u53F3\u4FA7\uFF09\uff1alogo.png \u7ECF data URI \u5185\u8054\uFF08\u590D\u7528 .dai_image_data_uri\uFF09\u3002
 # URI \u7F13\u5B58\uFF0C\u6BCF\u8FDB\u7A0B\u53EA\u7F16\u4E00\u6B21\uFF1B\u627E\u4E0D\u5230\u6587\u4EF6\u65F6\u8FD4\u56DE\u7A7A\u5B57\u7B26\u4E32\uFF0C\u4E0D\u5F71\u54CD\u9762\u677F\u5176\u5B83\u529F\u80FD\u3002
+# \u8DE8\u7248\u5751\uFF1aR \u5B89\u88C5\u6811\u4E0D\u542B man/\uFF0C\u5355\u8D70 man/figures \u5728\u88C5\u597D\u7684\u5305\u91CC\u662F\u7A7A\u2014\u2014
+# \u8D44\u6E90\u53CC\u5907\uFF1aman/figures\uFF08\u6E90\u7801\u4F4D\uFF0Cload_all \u53EF\u89C1\uFF09+ inst/figures\uFF08\u5B89\u88C5\u4F4D\uFF0C\u786C\u62F7\u8D1D\uFF09\uFF0C\u4E24\u8DEF\u90FD\u8BD5\u3002
 .dai_logo_env <- new.env(parent = emptyenv())
 
 .dai_logo_uri <- function() {
   if (!is.null(.dai_logo_env$uri)) return(.dai_logo_env$uri)
   .dai_logo_env$uri <- ""
-  path <- system.file("man", "figures", "logo.png", package = "daiRH")
-  if (nzchar(path) && file.exists(path)) {
-    uri <- tryCatch(.dai_image_data_uri(path), error = function(e) "")
-    .dai_logo_env$uri <- uri
+  candidates <- c(
+    system.file(file.path("man", "figures", "logo.png"), package = "daiRH"),
+    system.file(file.path("figures", "logo.png"), package = "daiRH")
+  )
+  for (path in candidates) {
+    if (nzchar(path) && file.exists(path)) {
+      uri <- tryCatch(.dai_image_data_uri(path), error = function(e) "")
+      if (nzchar(uri)) {
+        .dai_logo_env$uri <- uri
+        break
+      }
+    }
   }
   .dai_logo_env$uri
 }
