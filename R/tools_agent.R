@@ -622,6 +622,13 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
     function(path) {
       r <- .dai_show_plot_prep(path, base = base, restrict = restrict)
       if (isTRUE(r$ok)) {
+        # magick \u4E0D\u662F\u786C\u4F9D\u8D56\uFF08\u4E0D\u58F0\u660E\u5728 DESCRIPTION\uFF09\uFF1Aresize="low" \u9700\u8981\u5B83\uFF0C
+        # \u6CA1\u88C5\u65F6\uFF08\u5982 CI\uFF09\u4F1A\u5728 content_image_file \u5185\u90E8\u62FC\u62BC\u51FA\u9519\uFF1B\u964D\u7EA7 resize="none"
+        # \uFF08\u53D1\u539F\u56FE\u4E0D\u538B\u7F29\uFF09\u529F\u80FD\u4E0D\u65AD\u3002
+        r$img <- tryCatch(
+          ellmer::content_image_file(r$msg, resize = "low"),
+          error = function(e) ellmer::content_image_file(r$msg, resize = "none")
+        )
         # 0.5 \u76F4\u8FD4\uFF1A\u6587\u672C + \u56FE\u7247\u4F5C\u4E3A\u5DE5\u5177\u7ED3\u679C\u8FDB\u5BF9\u8BDD\uFF08ellmer 0.5 \u5B98\u65B9\u652F\u6301 Content \u5217\u8868\uFF09\u3002
         # \u9762\u677F\u5DE5\u5177\u5361\u7247\u5185\u8054\u6E32\u67D3\u3001\u968F\u4F1A\u8BDD\u5386\u53F2\u91CD\u653E\uFF1B\u652F\u6301\u89C6\u89C9\u7684\u7AEF\u70B9\u4E0A\u6A21\u578B\u80FD\u771F\u6B63\u770B\u56FE\u5206\u6790\uFF0C
         # \u7EAF\u6587\u672C\u7AEF\u70B9\u53EA\u770B\u5230\u6587\u5B57\u90E8\u5206\uFF08openai_compatible \u8D70\u964D\u7EA7\u56DE\u9000\uFF0C\u5B9E\u6D4B\u65E0\u5BB3\uFF09\u3002
@@ -629,7 +636,7 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
           ellmer::ContentText(text = paste0(
             "OK: \u56FE\u7247\u5DF2\u8FDB\u5165\u5BF9\u8BDD\uFF08", r$msg,
             "\uFF09\u3002\u8BF7\u57FA\u4E8E\u56FE\u7247\u7EE7\u7EED\u5206\u6790\u3002")),
-          ellmer::content_image_file(r$msg, resize = "low")
+          r$img
         )
       } else {
         r$msg

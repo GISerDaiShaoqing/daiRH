@@ -69,7 +69,7 @@
 ```sh
 # 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
 #    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧
-#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254
+#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 261
 Rscript -e "testthat::test_local('<包目录>')"
 
 # 2) 装 CI 同参数的本地 R CMD check 门（0.5.1 之前缺这道门发生过：
@@ -113,6 +113,14 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 文本里内嵌图不可行。聊天插图走原生 contents 图片通道（show_plot 即此）；
 静态 Logo 放面板自家标记（`.dai_title_logo()`，data URI 复用
 `.dai_image_data_uri()` 并缓存）。
+
+**magick 避坑（0.5.0 CI 四平台红实测）**：CI 不会安装项目没声明的重型包
+（`setup-r-dependencies` 只按 DESCRIPTION 相依解析），而
+`ellmer::content_image_file(..., resize != "none")` 内部 `check_installed("magick")`
+非交互直接抛错。本地装了 magick 所以测试全绿、CI 才红假性"环境无关"。
+规矩：测试里凡是构造图片显式传 `resize="none"`，或 `skip_if_not_installed("magick")`；
+运行时代码涉及 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。
+不要把 magick 加进 DESCRIPTION（依赖太重）。
 
 **安装树坑（实测）**：R 装包时不会把 `man/` 拷进安装树——`system.file("man","figures","logo.png")` 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：`man/figures/`（源码位置，load_all 可见）+ `inst/figures/`（硬拷贝，安装树一定在），查找函数两条路径都试。
 

@@ -515,6 +515,40 @@ test_that("show_plot tool returns Content list (text + inline image) on success"
 })
 
 local_test_trace_dir()
+test_that("show_plot falls back to resize=none when magick is missing", {
+  tmpd <- file.path(tempdir(), paste0("dairh-fb-", as.integer(Sys.time())))
+  dir.create(tmpd, recursive = TRUE, showWarnings = FALSE)
+  withr::defer(unlink(tmpd, recursive = TRUE), envir = parent.frame())
+  withr::local_dir(tmpd)
+
+  png <- tempfile(fileext = ".png", tmpdir = tmpd)
+  grDevices::png(png, width = 400, height = 400)
+  graphics::plot(1:3)
+  grDevices::dev.off()
+
+  calls <- character(0)
+  local_mocked_bindings(
+    content_image_file = function(path, content_type = "auto", resize = "low") {
+      calls <<- c(calls, resize)
+      if (identical(resize, "low")) stop("magick absent", call. = FALSE)
+      ellmer::ContentText(text = paste0("IMG-", resize))
+    },
+    .package = "ellmer"
+  )
+
+  tools <- dairh_agent_tools(
+    dairh_config_default(), state = .dairh_new_state(dairh_config_default())
+  )
+  out <- tools$show_plot(path = png)
+  expect_true(is.list(out))
+  expect_length(out, 2L)
+  expect_true(inherits(out[[1]], "ellmer::ContentText"))
+  expect_match(out[[1]]@text, "OK", fixed = TRUE)
+  expect_true(inherits(out[[2]], "ellmer::ContentText"))
+  expect_match(out[[2]]@text, "IMG-none", fixed = TRUE)
+  expect_identical(calls, c("low", "none"))
+})
+
 test_that("show_html: validates path/ext/size, opens via bridge or browser", {
   tmpd <- file.path(tempdir(), paste0("dairh-html-", as.integer(Sys.time())))
   dir.create(tmpd, recursive = TRUE, showWarnings = FALSE)

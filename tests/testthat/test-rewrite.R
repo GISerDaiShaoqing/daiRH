@@ -106,7 +106,8 @@ test_that("post_tool hooks do not run on Content results", {
   grDevices::dev.off()
   withr::defer(unlink(p), envir = parent.frame())
   dairh_register_tool("tt_content", function(x) {
-    list(ellmer::ContentText(text = paste0("OK: ", x)), ellmer::content_image_file(p))
+    # resize="none" \u4E0D\u4F9D\u8D56 magick\uFF08CI \u4E0D\u5B89 magick\uFF0C0.5.1 \u6559\u8BB5\uFF09\uFF1B\u8FD4\u56DE\u5185\u5BB9\u4E0E\u672C\u6D4B\u65E0\u5173
+    list(ellmer::ContentText(text = paste0("OK: ", x)), ellmer::content_image_file(p, resize = "none"))
   }, "content returning tool",
     arguments = list(x = ellmer::type_string("x", required = TRUE)),
     overwrite = TRUE
