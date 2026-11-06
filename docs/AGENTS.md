@@ -78,16 +78,30 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 ``` sh
 # 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
 #    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧
-#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254
+#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 261
 Rscript -e "testthat::test_local('<包目录>')"
 
-# 2) 装进系统库（Windows 例）
+# 2) 装 CI 同参数的本地 R CMD check 门（0.5.1 之前缺这道门发生过：
+#    Rd 漏 @param 四平台齐红）。判据 Status: OK。两个坑（实测）：
+#    a. 必须在 PowerShell/cmd 里跑且清空 LANG/LC_CTYPE/LC_ALL/LANGUAGE——
+#       Git Bash 的 C.UTF-8 会让 R 启动喷 "Setting LC_CTYPE failed"，
+#       check 收集子进程 stderr 直接伪造 WARNING+ERROR；
+#    b. 必须 --no-manual（CI 的 r-lib action 默认就带）：本地 pdflatex 对
+#       中文 Rd 过不了 inputenc，纯噪声。
+powershell -Command "foreach ($v in 'LANG','LC_CTYPE','LC_ALL','LANGUAGE'){Remove-Item Env:$v};
+  $env:_R_CHECK_CRAN_INCOMING_='false'; $env:_R_CHECK_URLS_CRAN_='false';
+  & '<R目录>/bin/R.exe' CMD build '<包目录>';
+  & '<R目录>/bin/R.exe' CMD check --no-manual --as-cran '<包目录>_x.y.z.tar.gz'"
+#    （powershell 要先 cd 到自己工作的临时目录里，build 产物落在那里）
+
+# 3) 装进系统库（Windows 例）
 R.exe --vanilla CMD INSTALL --no-multiarch -l <R 库目录> <包目录>
 
-# 3) 手改了 roxygen 注释之后
+# 4) 手改了 roxygen 注释之后
 Rscript -e "roxygen2::roxygenise('<包目录>' )"   # 再跟 scripts/fix_rd.R
+#    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR
 
-# 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）
+# 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）
 Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 ```
 
@@ -111,6 +125,15 @@ src（imgCount=1、naturalWidth=0）——greeting/markdown
 静态 Logo 放面板自家标记（`.dai_title_logo()`，data URI 复用
 `.dai_image_data_uri()` 并缓存）。
 
+**magick 避坑（0.5.0 CI 四平台红实测）**：CI 不会安装项目没声明的重型包
+（`setup-r-dependencies` 只按 DESCRIPTION 相依解析），而
+`ellmer::content_image_file(..., resize != "none")` 内部
+`check_installed("magick")` 非交互直接抛错。本地装了 magick
+所以测试全绿、CI 才红假性”环境无关”。 规矩：测试里凡是构造图片显式传
+`resize="none"`，或 `skip_if_not_installed("magick")`； 运行时代码涉及
+magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。 不要把
+magick 加进 DESCRIPTION（依赖太重）。
+
 **安装树坑（实测）**：R 装包时不会把 `man/`
 拷进安装树——`system.file("man","figures","logo.png")`
 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all
@@ -120,8 +143,45 @@ src（imgCount=1、naturalWidth=0）——greeting/markdown
 ## 发布清单
 
 1.  改名包：`DESCRIPTION` Version → NEWS.md 顶部加段 → 测试全绿 →
-    roxygenise + fix_rd.R → pkgdown 重建。
-2.  `git status` 自查无额外杂物后由维护者 commit + push（等 CI
+    roxygenise + fix_rd.R → **本地 R CMD
+    check（`--no-manual --as-cran`， 见常用流程第 2 步，Status: OK）** →
+    pkgdown 重建。 （0.5.0 曾因只跑单测不跑 as-cran
+    检查，`dairh_read_skill.Rd` 漏 `@param name` 直接四平台齐红——warn
+    级才会伤盯 CI 的人，别省这道门）
+2.  **产出文档同步**（细节见”产出文档”一节）：维护者本地派生文档按新版口径
+    过一遍才算发完。
+3.  `git status` 自查无额外杂物后由维护者 commit + push（等 CI
     四平台绿）。
-3.  `git tag vX.Y.Z` 并推送；GitHub Release 页描述贴 NEWS 对应段落。
-4.  发版前后跑一遍密钥足迹自检（仓库/tarball/历史三面）。
+4.  `git tag vX.Y.Z` 并推送；GitHub Release 页描述贴 NEWS 对应段落；
+    `docs/CNAME` 仍在。
+5.  发版前后跑一遍密钥足迹自检（仓库/tarball/历史三面）。
+
+## 产出文档（规定）
+
+- 存在一批**维护者本地维护的对外派生文档**（技术文章、论文材料、软著登记
+  材料等），它们**不进包仓库**，与包目录平行的本地工作区集中存放。
+- **同步义务**：每次发版（发布清单第 2 步）按新版口径同步这批文档；具体
+  清单、路径与动作列表维护在产出工作区自己的 README 里，**不写入本文件**
+  ——本文件是公开页（pkgdown 会把根目录 .md 收进站点），凡”仅存在于本地
+  的事实”（文件路径、提交状态、日期）不得在此出现。
+- 红线对其同样适用：不出现内网/校园地址、API key、上游工具品牌名；
+  软著日期与证件信息永远只由维护者本人确定，助手只代笔技术内容。
+
+## 文档站双语化（规定）
+
+- **目标**：`https://gisersqdai.top/daiRH/` 中英双语——中文主站 +
+  英文入口， 顶部互链语言切换。
+- **现状（方案 B 已落地）**：中文主站内容不动；`_pkgdown.yml` 导航右侧挂
+  `EN → en/index.html`（pkgdown 会按页面深度自动改写成
+  `../en/index.html`， 0.5.0 后实测）；英文入口是**静态页**
+  `docs/en/index.html`（复用主站 `deps/` 资产与
+  logo，随发版手工同步内容）。已实测两个耐性：pkgdown 重建 **不清除**
+  `docs/en/`（自动生成 `en/index.md` 文本镜像，照抄 llm-docs
+  机制），CNAME 不丢。函数参考仍以中文保留 + 英文页深链（功能页 usage
+  代码 通用）；英文 NEWS 摘要后补。
+- **升级路径（方案 A，暂缓）**：双 pkgdown 配置两份站点做多语言全镜像；
+  参考页 Rd 说明全中文，全镜像前需要批量英化 roxygen 文案（成本高，等英
+  文读者真实增长再上）。
+- **同步义务**：英文页内容随发版同步（并入发布清单第 2 步）；若未来某次
+  pkgdown 升级改变清理行为导致 `docs/en/`
+  被清，重建后按本节重新补回静态页。

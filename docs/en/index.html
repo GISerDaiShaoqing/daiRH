@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<title>daiRH — an agentic coding assistant for RStudio</title>
+<meta name="description" content="A conversational coding agent with a real harness (tool registry, hooks, step budget, call traces) inside the RStudio Viewer pane. Works with any OpenAI-compatible endpoint.">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script>
+<style>
+  :root { --daccent:#27559b; }
+  body { padding-top: 4.5rem; }
+  .navbar .nav-link { font-weight: 500; }
+  code { color: var(--daccent); }
+  pre.codeblock { background:#f6f7f9; border:1px solid #e3e5e9; border-radius:.5rem; padding:.9rem 1rem; }
+  section { padding: 1.5rem 0; }
+  h2 { border-bottom: 2px solid #eef0f4; padding-bottom:.3rem; margin-top: 2rem; }
+  .lead { color:#444; }
+  .feature-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem; }
+  .feature-card { border:1px solid #e3e5e9; border-radius:.6rem; padding:1rem; height:100%; background:#fff; }
+  .feature-card h6 { margin-bottom:.4rem; }
+  .feature-card p, .tool-card p { font-size:.92rem; color:#555; margin-bottom:0; }
+  .tool-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:.75rem; }
+  .tool-card { border:1px solid #e3e5e9; border-radius:.5rem; padding:.7rem; background:#fbfbfc; }
+  .badge-lang { font-size:.8rem; }
+  footer { border-top:1px solid #eef0f4; margin-top:2.5rem; padding:1.2rem 0; color:#777; font-size:.9rem; }
+</style>
+</head>
+<body data-bs-theme="light">
+
+<nav class="navbar navbar-expand-lg fixed-top bg-body-secondary">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="./">
+      <img src="../logo.svg" alt="daiRH logo" width="26" height="26" class="d-inline-block">
+      <strong>daiRH</strong>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item"><a class="nav-link" href="#about">Overview</a></li>
+        <li class="nav-item"><a class="nav-link" href="#install">Install</a></li>
+        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="#reference">Reference</a></li>
+        <li class="nav-item"><a class="nav-link" href="../">中文站</a></li>
+        <li class="nav-item"><a class="nav-link" href="https://github.com/GISerDaiShaoqing/daiRH"><i class="fa fa-github"></i> GitHub</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+
+  <section id="about">
+    <img src="../logo.svg" alt="daiRH" width="120" height="120" class="float-end d-none d-md-block">
+    <h1 class="display-6">daiRH <small class="text-body-secondary fs-5">— agentic coding assistant for RStudio</small></h1>
+    <p class="lead mt-3">
+      A conversational coding agent that lives in the <strong>RStudio Viewer pane</strong>, built on
+      <code>ellmer</code> + <code>shinychat</code>, and — more importantly — a real
+      <strong>harness</strong>: tool registry, pre/post hooks (intercept · argument rewrite ·
+      result rewrite), a hard per-turn tool-call budget, and JSONL call traces.
+    </p>
+    <p>
+      It runs any <strong>OpenAI-compatible endpoint</strong> (local Ollama, cloud providers) and keeps
+      the console free: the panel runs in an isolated <code>callr</code> subprocess that talks back to the
+      main R session over a local capability bridge. Chinese speaker? The
+      <a href="../">main documentation is in Chinese</a>.
+    </p>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+<pre class="codeblock"><code>install.packages("remotes")
+remotes::install_github("GISerDaiShaoqing/daiRH")</code></pre>
+    <p class="mt-2">
+      Requires R ≥ 4.1 and RStudio Desktop. After install and an R restart, launch from
+      <code>Tools → Addins → daiRH Chat</code>, configure provider/model/key in
+      <code>daiRH Settings</code>, or use the console CLI with <code>daiRH::dairh_cli()</code>.
+    </p>
+  </section>
+
+  <section id="features">
+    <h2>Features</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h6><i class="fa fa-users-gear me-1"></i>Built-in toolset</h6>
+        <p>Twelve tools out of the box: read/list/create/edit files, run R in an isolated
+        subprocess, R help lookup, workspace summary, editor context, plotting, interactive HTML,
+        skills, sub-agents. File operations default to the project directory.</p>
+      </div>
+      <div class="feature-card">
+        <h6><i class="fa fa-gavel me-1"></i>Runtime governance</h6>
+        <p>Prompt advice becomes enforced rules: hard step budget per user turn, hooks that can
+        veto or rewrite arguments/results, and full JSONL traceability of every tool call
+        (main and sub agents on one timeline).</p>
+      </div>
+      <div class="feature-card">
+        <h6><i class="fa fa-image me-1"></i>Images in chat</h6>
+        <p>Plots are returned directly into the conversation as text + image content — rendered
+        inline in the chat, persisted with session history, and usable for vision-capable models
+        to keep analyzing. Gracefully degrades when <code>magick</code> is unavailable.</p>
+      </div>
+      <div class="feature-card">
+        <h6><i class="fa fa-diagram-project me-1"></i>Sub-agent delegation</h6>
+        <p>The agent can delegate self-contained subtasks to an isolated context (own step
+        budget, one-level recursion lock) — batch checks and research errands don't eat the
+        main conversation.</p>
+      </div>
+      <div class="feature-card">
+        <h6><i class="fa fa-book me-1"></i>Skills library</h6>
+        <p>Drop Markdown files into a conventional directory and they become agent skills,
+        loaded on demand (progressive disclosure, nothing resident in the context).</p>
+      </div>
+      <div class="feature-card">
+        <h6><i class="fa fa-clock-rotate-left me-1"></i>Session history</h6>
+        <p>A drawer lists/searches/reopens past conversations; reopening the panel rehydrates
+        the latest chat, including prior tool calls. Trace and history directories are
+        configurable.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="reference">
+    <h2>Function reference</h2>
+    <p>
+      The full function reference is maintained in Chinese on the main site — index:
+      <a href="../reference/index.html">函数参考</a>. The function names and signatures are
+      universal, and each page shows the call usage in code form.
+    </p>
+    <p class="text-body-secondary">
+      Release notes: <a href="../news/index.html">版本记录（Chinese）</a>. English summaries of
+      major releases are coming along with the bilingual rollout.
+    </p>
+  </section>
+
+  <footer>
+    <div class="container">
+      <span>daiRH is developed by
+      <a href="https://github.com/GISerDaiShaoqing">Shaoqing Dai</a>
+      (<a href="https://orcid.org/0000-0003-0858-4728">ORCID</a>) and released as open source.</span>
+      <span class="ms-3"><a href="../">中文站</a> · <a href="https://github.com/GISerDaiShaoqing/daiRH">GitHub</a></span>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>

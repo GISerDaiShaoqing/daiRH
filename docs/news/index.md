@@ -8,9 +8,10 @@
   工具卡片原生内联渲染，并随 会话历史存档重放（顺手修掉
   0.4.0「绘图消息不随会话恢复」的已知边界）；支持视觉
   的模型还能真正”看到”图继续分析（openai_compatible/ollama 由 ellmer
-  降级回退为 user turn
-  图片内容，纯文本端点只见文字，实测无害）。面板静态图目录与 400ms
-  轮询总线整体退役。
+  降级回退为 user turn 图片内容，纯文本端点只见文字，实测无害）。magick
+  不是硬依赖： 未安装时（如 CI
+  未装）图片构造自动降级为不放缩原图（`resize="none"`），
+  功能不因缺包中断。面板静态图目录与 400ms 轮询总线整体退役。
 - **钩子参数改写**：`pre_tool` 钩子新增第三种返回值
   `dairh_rewrite_args(args)`——
   改写本次工具调用的参数后放行（原「字符串=拦截、NULL=放行」语义不变）；改写链
@@ -41,9 +42,17 @@
   后旧会话不丢，只是抽屉指向新目录。
 - **杂项**：[`dairh_agent_tools()`](https://gisersqdai.top/daiRH/reference/dairh_agent_tools.md)
   新增 `exclude` 参数（子代理构建工具集时排除
-  `delegate_task`）；新增测试 20+
-  条（钩子改写/技能库/子代理/新配置字段/show_plot
-  直返/show_html），本地基线 FAIL 0 \| WARN 0 \| PASS 254。
+  `delegate_task`）；子代理的工具调用改为追加进父 trace
+  文件（单一时间线， `agent` 列区分
+  main/sub，此前子代理写独立文件、[`dairh_trace()`](https://gisersqdai.top/daiRH/reference/dairh_trace.md)
+  只读一个，
+  实测委派观测不到子过程）；[`dairh_trace_path()`](https://gisersqdai.top/daiRH/reference/dairh_trace_path.md)
+  不再让缓存的旧文件一票否决 （重开面板后目录里出现更新的 trace
+  文件时跟随最新）；show_plot 工具内的 图片构造带 magick
+  缺失降级（tryCatch 回退 resize=“none”，`dairh_read_skill.Rd`
+  补上漏掉的 `@param name`）；新增测试 20+
+  条（钩子改写/技能库/子代理/新配置字段/ show_plot
+  直返/show_html），本地基线 FAIL 0 \| WARN 0 \| PASS 261。
 
 ## daiRH 0.4.0
 

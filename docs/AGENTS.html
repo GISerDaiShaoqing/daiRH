@@ -17,7 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="reference/index.html">函数参考</a></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">版本记录</a></li>
-      </ul><ul class="navbar-nav"><li class="nav-item"><a class="external-link nav-link" href="https://github.com/GISerDaiShaoqing/daiRH" aria-label="GitHub"><span class="fa fa-github"></span></a></li>
+      </ul><ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="en/index.html">EN</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/GISerDaiShaoqing/daiRH" aria-label="GitHub"><span class="fa fa-github"></span></a></li>
       </ul></div>
 
 
@@ -101,17 +102,31 @@
 <h2 id="常用流程">常用流程<a class="anchor" aria-label="anchor" href="#%E5%B8%B8%E7%94%A8%E6%B5%81%E7%A8%8B"></a></h2>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 261</span></span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"testthat::test_local('&lt;包目录&gt;')"</span></span>
 <span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co"># 2) 装进系统库（Windows 例）</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co"># 3) 手改了 roxygen 注释之后</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co"># 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co"># 2) 装 CI 同参数的本地 R CMD check 门（0.5.1 之前缺这道门发生过：</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#    Rd 漏 @param 四平台齐红）。判据 Status: OK。两个坑（实测）：</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#    a. 必须在 PowerShell/cmd 里跑且清空 LANG/LC_CTYPE/LC_ALL/LANGUAGE——</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#       Git Bash 的 C.UTF-8 会让 R 启动喷 "Setting LC_CTYPE failed"，</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#       check 收集子进程 stderr 直接伪造 </span><span class="al">WARNING</span><span class="co">+ERROR；</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#    b. 必须 --no-manual（CI 的 r-lib action 默认就带）：本地 pdflatex 对</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#       中文 Rd 过不了 inputenc，纯噪声。</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="ex">powershell</span> <span class="at">-Command</span> <span class="st">"foreach (</span><span class="va">$v</span><span class="st"> in 'LANG','LC_CTYPE','LC_ALL','LANGUAGE'){Remove-Item Env:</span><span class="va">$v</span><span class="st">};</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="st">  </span><span class="va">$env</span><span class="st">:_R_CHECK_CRAN_INCOMING_='false'; </span><span class="va">$env</span><span class="st">:_R_CHECK_URLS_CRAN_='false';</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="st">  &amp; '&lt;R目录&gt;/bin/R.exe' CMD build '&lt;包目录&gt;';</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="st">  &amp; '&lt;R目录&gt;/bin/R.exe' CMD check --no-manual --as-cran '&lt;包目录&gt;_x.y.z.tar.gz'"</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#    （powershell 要先 cd 到自己工作的临时目录里，build 产物落在那里）</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co"># 3) 装进系统库（Windows 例）</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co"># 4) 手改了 roxygen 注释之后</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR</span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co"># 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="依赖升级适配清单每次-ellmershinychatshiny-大版本升级照这个走">依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）<a class="anchor" aria-label="anchor" href="#%E4%BE%9D%E8%B5%96%E5%8D%87%E7%BA%A7%E9%80%82%E9%85%8D%E6%B8%85%E5%8D%95%E6%AF%8F%E6%AC%A1-ellmershinychatshiny-%E5%A4%A7%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E7%85%A7%E8%BF%99%E4%B8%AA%E8%B5%B0"></a></h2>
@@ -122,17 +137,38 @@
 <strong>无头复现面板</strong>：<code>shiny::runApp(list(ui=app$ui, server=app$server),    port=&lt;port&gt;, launch.browser=FALSE)</code> 起本地口，用浏览器自动化截图 + 量 DOM 几何（<code>getBoundingClientRect</code>）定位布局问题；360–900px 宽度 全走一遍再算适配完。</li>
 <li>新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免 “UI 一套状态、Agent 另一套”的错位。</li>
 </ol><p><strong>shinychat 避坑（实测）</strong>：其客户端 markdown 管道允许 <code>&lt;img&gt;</code> 标签通过但会 剥掉 <code>data:</code> 协议的 src（imgCount=1、naturalWidth=0）——greeting/markdown 文本里内嵌图不可行。聊天插图走原生 contents 图片通道（show_plot 即此）； 静态 Logo 放面板自家标记（<code>.dai_title_logo()</code>，data URI 复用 <code>.dai_image_data_uri()</code> 并缓存）。</p>
+<p><strong>magick 避坑（0.5.0 CI 四平台红实测）</strong>：CI 不会安装项目没声明的重型包 （<code>setup-r-dependencies</code> 只按 DESCRIPTION 相依解析），而 <code>ellmer::content_image_file(..., resize != "none")</code> 内部 <code>check_installed("magick")</code> 非交互直接抛错。本地装了 magick 所以测试全绿、CI 才红假性”环境无关”。 规矩：测试里凡是构造图片显式传 <code>resize="none"</code>，或 <code>skip_if_not_installed("magick")</code>； 运行时代码涉及 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。 不要把 magick 加进 DESCRIPTION（依赖太重）。</p>
 <p><strong>安装树坑（实测）</strong>：R 装包时不会把 <code>man/</code> 拷进安装树——<code>system.file("man","figures","logo.png")</code> 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：<code>man/figures/</code>（源码位置，load_all 可见）+ <code>inst/figures/</code>（硬拷贝，安装树一定在），查找函数两条路径都试。</p>
 </div>
 <div class="section level2">
 <h2 id="发布清单">发布清单<a class="anchor" aria-label="anchor" href="#%E5%8F%91%E5%B8%83%E6%B8%85%E5%8D%95"></a></h2>
-<ol style="list-style-type: decimal"><li>改名包：<code>DESCRIPTION</code> Version → NEWS.md 顶部加段 → 测试全绿 → roxygenise + fix_rd.R → pkgdown 重建。</li>
+<ol style="list-style-type: decimal"><li>改名包：<code>DESCRIPTION</code> Version → NEWS.md 顶部加段 → 测试全绿 → roxygenise + fix_rd.R → <strong>本地 R CMD check（<code>--no-manual --as-cran</code>， 见常用流程第 2 步，Status: OK）</strong> → pkgdown 重建。 （0.5.0 曾因只跑单测不跑 as-cran 检查，<code>dairh_read_skill.Rd</code> 漏 <code>@param name</code> 直接四平台齐红——warn 级才会伤盯 CI 的人，别省这道门）</li>
+<li>
+<strong>产出文档同步</strong>（细节见”产出文档”一节）：维护者本地派生文档按新版口径 过一遍才算发完。</li>
 <li>
 <code>git status</code> 自查无额外杂物后由维护者 commit + push（等 CI 四平台绿）。</li>
 <li>
-<code>git tag vX.Y.Z</code> 并推送；GitHub Release 页描述贴 NEWS 对应段落。</li>
+<code>git tag vX.Y.Z</code> 并推送；GitHub Release 页描述贴 NEWS 对应段落； <code>docs/CNAME</code> 仍在。</li>
 <li>发版前后跑一遍密钥足迹自检（仓库/tarball/历史三面）。</li>
 </ol></div>
+<div class="section level2">
+<h2 id="产出文档规定">产出文档（规定）<a class="anchor" aria-label="anchor" href="#%E4%BA%A7%E5%87%BA%E6%96%87%E6%A1%A3%E8%A7%84%E5%AE%9A"></a></h2>
+<ul><li>存在一批<strong>维护者本地维护的对外派生文档</strong>（技术文章、论文材料、软著登记 材料等），它们<strong>不进包仓库</strong>，与包目录平行的本地工作区集中存放。</li>
+<li>
+<strong>同步义务</strong>：每次发版（发布清单第 2 步）按新版口径同步这批文档；具体 清单、路径与动作列表维护在产出工作区自己的 README 里，<strong>不写入本文件</strong> ——本文件是公开页（pkgdown 会把根目录 .md 收进站点），凡”仅存在于本地 的事实”（文件路径、提交状态、日期）不得在此出现。</li>
+<li>红线对其同样适用：不出现内网/校园地址、API key、上游工具品牌名； 软著日期与证件信息永远只由维护者本人确定，助手只代笔技术内容。</li>
+</ul></div>
+<div class="section level2">
+<h2 id="文档站双语化规定">文档站双语化（规定）<a class="anchor" aria-label="anchor" href="#%E6%96%87%E6%A1%A3%E7%AB%99%E5%8F%8C%E8%AF%AD%E5%8C%96%E8%A7%84%E5%AE%9A"></a></h2>
+<ul><li>
+<strong>目标</strong>：<code>https://gisersqdai.top/daiRH/</code> 中英双语——中文主站 + 英文入口， 顶部互链语言切换。</li>
+<li>
+<strong>现状（方案 B 已落地）</strong>：中文主站内容不动；<code>_pkgdown.yml</code> 导航右侧挂 <code>EN → en/index.html</code>（pkgdown 会按页面深度自动改写成 <code>../en/index.html</code>， 0.5.0 后实测）；英文入口是<strong>静态页</strong> <code>docs/en/index.html</code>（复用主站 <code>deps/</code> 资产与 logo，随发版手工同步内容）。已实测两个耐性：pkgdown 重建 <strong>不清除</strong> <code>docs/en/</code>（自动生成 <code>en/index.md</code> 文本镜像，照抄 llm-docs 机制），CNAME 不丢。函数参考仍以中文保留 + 英文页深链（功能页 usage 代码 通用）；英文 NEWS 摘要后补。</li>
+<li>
+<strong>升级路径（方案 A，暂缓）</strong>：双 pkgdown 配置两份站点做多语言全镜像； 参考页 Rd 说明全中文，全镜像前需要批量英化 roxygen 文案（成本高，等英 文读者真实增长再上）。</li>
+<li>
+<strong>同步义务</strong>：英文页内容随发版同步（并入发布清单第 2 步）；若未来某次 pkgdown 升级改变清理行为导致 <code>docs/en/</code> 被清，重建后按本节重新补回静态页。</li>
+</ul></div>
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

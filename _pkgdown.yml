@@ -24,6 +24,8 @@ navbar:
     - text: 版本记录
       href: news/index.html
   right:
+    - text: EN
+      href: en/index.html
     - icon: fa-github
       aria-label: GitHub
       href: https://github.com/GISerDaiShaoqing/daiRH

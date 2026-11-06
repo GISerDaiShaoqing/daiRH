@@ -9,6 +9,12 @@
 dairh_read_skill(name = "")
 ```
 
+## Arguments
+
+- name:
+
+  技能名；留空则列出技能清单，给名读取全文
+
 ## Value
 
 技能说明文本（字符向量，长度 1）
