@@ -66,6 +66,8 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 | `R/agent.R` | 系统提示词、[`dairh_new_agent()`](https://gisersqdai.top/daiRH/reference/dairh_new_agent.md) 组装 |
 | `R/subagent.R` | 子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算） |
 | `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
+| `R/compact.R` | 上下文压缩核心（transcript 渲染 / 主模型一次性摘要 / set_turns 重水合 / 预算重置；面板按钮与 CLI /compact 共用） |
+| `R/usage.R` | token 用量日志（[`dairh_client()`](https://gisersqdai.top/daiRH/reference/dairh_client.md) 构造时经 on_request_end 单漏斗挂点；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
 | `R/context.R` | RStudio 编辑器上下文/主会话桥 |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
@@ -78,7 +80,7 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 ``` sh
 # 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
 #    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧
-#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 261
+#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 335
 Rscript -e "testthat::test_local('<包目录>')"
 
 # 2) 装 CI 同参数的本地 R CMD check 门（0.5.1 之前缺这道门发生过：
@@ -113,8 +115,10 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 2.  在 R 源里 `grep` 调用点，确认废弃 API 零残留（历史注释除外）。
 3.  **无头复现面板**：`shiny::runApp(list(ui=app$ui, server=app$server), port=<port>, launch.browser=FALSE)`
     起本地口，用浏览器自动化截图 + 量 DOM
-    几何（`getBoundingClientRect`）定位布局问题；360–900px 宽度
-    全走一遍再算适配完。
+    几何（`getBoundingClientRect`）定位布局问题；360–900px 与大屏
+    1440/1920/2560px 宽度全走一遍再算适配完（面板列跟随 viewer 全宽是
+    维护者的口味决定，0.6 试过 1100px 限宽后被否掉——别再擅自加回来；
+    抽屉搜索框的 CSS 钉位规则在 `.dai_panel_css()`）。
 4.  新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免 “UI
     一套状态、Agent 另一套”的错位。
 

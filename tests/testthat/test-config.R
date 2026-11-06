@@ -70,3 +70,32 @@ test_that("0.5 config fields: dirs / subagent settings", {
   expect_identical(.dairh_history_dir(dairh_config_default()),
     file.path(tools::R_user_dir("daiRH", "data"), "conversations"))
 })
+
+test_that("0.6 preset static model lists (GET /models fallback)", {
+  oc <- DAI_LLM_PRESETS[["opencode.go"]]
+  expect_true(is.character(oc$models) && length(oc$models) >= 5L)
+  expect_true("glm-5.3-flash" %in% oc$models)
+  expect_false(anyNA(oc$models))
+  expect_true(all(nzchar(oc$models)))
+  ds <- DAI_LLM_PRESETS[["deepseek.chat"]]
+  expect_identical(sort(ds$models), c("deepseek-chat", "deepseek-reasoner"))
+  # ollama relies on dynamic discovery: no static list needed
+  expect_null(DAI_LLM_PRESETS[["ollama.local"]]$models)
+})
+
+test_that("0.6 context_window config field (numeric coerce, blank = NA)", {
+  tmp <- file.path(tempdir(), paste0("daiRH-test-cw-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  dir.create(tmp, recursive = TRUE)
+  p <- file.path(tmp, "config.json")
+  options(daiRH.config_path = p)
+  on.exit(options(daiRH.config_path = NULL), add = TRUE)
+
+  # default unknown
+  expect_true(is.na(dairh_config_get()$context_window))
+  dairh_config_set(context_window = 1000000)
+  expect_equal(dairh_config_get()$context_window, 1e6)
+  # blank string coerces to NA (unknown window)
+  dairh_config_set(context_window = "")
+  expect_true(is.na(dairh_config_get()$context_window))
+})

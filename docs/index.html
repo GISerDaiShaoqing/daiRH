@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,7 +95,7 @@
 <strong>Tools → Addins → DaiRH Settings</strong>：配置 provider / 模型 / Key</li>
 <li>
 <strong>（强烈建议绑快捷键）Tools → Addins → daiRH Send Selection</strong>：选中代码后 一键直发面板讲解（Tools → Modify Keyboard Shortcuts 搜 daiRH 绑定）。 面板里的”讲解选中代码”按钮走快照式上下文，快照只在控制台<strong>运行真实代码</strong> 时刷新（空回车不保证触发）</li>
-<li>面板顶部两个图标：<strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与单轮硬预算， 不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时找回）和 <strong>⚙ 设置</strong>；聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
+<li>面板标题栏只留两个图标：<strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与 单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时 找回）和 <strong>⚙ 设置</strong>（provider·模型·工具数就显示在标题栏）； <strong>输入框下方的状态栏</strong>实时显示本会话累计 token（输入/输出）与上下文 容量，右侧是 <strong>压缩上下文</strong> 按钮（长会话一键压缩，见下文）； 聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
 <ul>
 <li>
 <strong>解释当前文件</strong> / <strong>讲解选中代码</strong> / <strong>审查当前文件</strong> / <strong>R 文档问答</strong>
@@ -115,7 +115,7 @@
 <p>不想开面板？控制台里直接跑：</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">daiRH</span><span class="fu">::</span><span class="fu"><a href="reference/dairh_cli.html">dairh_cli</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>ASCII 大字启动横幅（带动画）→ <code>daiRH ❯</code> 提示符循环：任务直接敲，模型流式输出、 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 <code>/help</code> 看命令，<code>/clear</code> 开新会话，<code>/tools</code> 列工具，<code>/exit</code> 退出。 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。</p>
+<p>ASCII 大字启动横幅（带动画）→ <code>daiRH ❯</code> 提示符循环：任务直接敲，模型流式输出、 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 <code>/help</code> 看命令，<code>/clear</code> 开新会话，<code>/compact</code> 压缩上下文，<code>/tools</code> 列工具，<code>/exit</code> 退出。 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。</p>
 </div>
 <div class="section level3">
 <h3 id="关闭助手运行模式说明">关闭助手（运行模式说明）<a class="anchor" aria-label="anchor" href="#%E5%85%B3%E9%97%AD%E5%8A%A9%E6%89%8B%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F%E8%AF%B4%E6%98%8E"></a>
@@ -156,7 +156,13 @@
 </tr>
 <tr>
 <td><code>model</code></td>
-<td>模型名；设置里可”列出模型”自动发现</td>
+<td>模型名；设置里可”列出模型”自动发现（网关不支持时回退预设内置清单）</td>
+</tr>
+<tr>
+<td>
+<code>api_key</code> / <code>api_key_env</code>
+</td>
+<td>key 直填，或写环境变量名（如 <code>DAI_API_KEY</code>）；Ollama 可留空</td>
 </tr>
 <tr>
 <td><code>temperature</code></td>
@@ -226,7 +232,7 @@
 <blockquote>
 <p>网页版白嫖路线：本地起任意 “web → OpenAI 兼容” 网关，设置里 provider 选 <code>OpenAI 兼容</code>、<code>base_url</code> 指过去即可，插件零改动。</p>
 </blockquote>
-<p><strong>OpenCode Go 套餐接入</strong>：设置里选 <code>opencode.go</code> 预设（自动填 <code>https://opencode.ai/inference/go/openai/v1</code> + <code>glm-5.3-flash</code>）， <strong>API key 自己填</strong>（key 直填，或填环境变量名——想和 codex 完全同源就在 “API Key” 框里填 <code>env:变量名</code>）。该网关走 OpenAI 兼容协议（实测 <code>/chat/completions</code> 可用；未提供 <code>GET /models</code>，故”列出模型”在此预设下 会提示手动填模型名）。网关要求 <code>x-opencode-session</code> 会话头，插件已自动 生成（每个面板一次会话 ID，无需配置）。注意额度按”次”计：面板每次成功 回复消耗 1 次。若报 <code>401 Invalid credential</code>，去 opencode.ai 控制台核对 Go 计划的 API key（网页登录 cookie 不是 key）。</p>
+<p><strong>OpenCode Go 套餐接入</strong>：设置里选 <code>opencode.go</code> 预设（自动填 <code>https://opencode.ai/inference/go/openai/v1</code> + <code>glm-5.3-flash</code>）， <strong>API key 自己填</strong>（key 直填，或填环境变量名——想和 codex 完全同源就在 “API Key” 框里填 <code>env:变量名</code>）。该网关走 OpenAI 兼容协议（实测 <code>/chat/completions</code> 可用；未提供 <code>GET /models</code>，故”列出模型”在此预设下 回退到内置模型清单，点选回填、手填仍然可用）。网关要求 <code>x-opencode-session</code> 会话头，插件已自动 生成（每个面板一次会话 ID，无需配置）。注意额度按”次”计：面板每次成功 回复消耗 1 次。若报 <code>401 Invalid credential</code>，去 opencode.ai 控制台核对 Go 计划的 API key（网页登录 cookie 不是 key）。</p>
 </div>
 <div class="section level2">
 <h2 id="架构dairh-是一个真正的-harness">架构：daiRH 是一个真正的 harness<a class="anchor" aria-label="anchor" href="#%E6%9E%B6%E6%9E%84dairh-%E6%98%AF%E4%B8%80%E4%B8%AA%E7%9C%9F%E6%AD%A3%E7%9A%84-harness"></a>
@@ -308,10 +314,15 @@
 <p>后台面板聊天区左上角的时钟按钮打开多会话抽屉：列表 / 搜索 / 切换 / 新建 / 重命名 / 删除。对话轮次（含工具调用链）持久化在 <code>tools::R_user_dir("daiRH", "data")/conversations</code>，重开面板自动续接最近一次 会话；单轮硬预算按新会话重新计。设置里 <code>history</code> 可整体关掉，<code>history_title</code> 控制 LLM 自动命名。gadget / CLI 模式不持久化。</p>
 </div>
 <div class="section level3">
+<h3 id="上下文压缩与-token-计量">上下文压缩与 token 计量<a class="anchor" aria-label="anchor" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8E%8B%E7%BC%A9%E4%B8%8E-token-%E8%AE%A1%E9%87%8F"></a>
+</h3>
+<p>长会话把上下文撑大后，点输入框右侧的<strong>压缩上下文</strong>（CLI 用 <code>/compact</code>）： 主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat， 1 次请求），模型上下文替换为摘要，单轮硬预算重置；原对话存入历史抽屉 可随时找回，聊天记录保留并附压缩横幅。标题栏同时显示<strong>累计 token（输入/ 输出）</strong>与<strong>上下文占用</strong>（最近一次请求的输入 token）；在设置里填上模型的 <code>context_window</code> 后，还会显示”上下文 45k / 1M (4.5%)“这样的容量百分比。</p>
+<p>每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会 追加一行 jsonl 到 <code>tools::R_user_dir("daiRH", "data")/usage/usage.jsonl</code> （<code>source/model/ok/input/output/cache_read[/cost]</code>，与按次计费网关的 对账口径一致）；环境变量 <code>DAIRH_USAGE_LOG=0</code> 整体关闭。请求出错不记 （错误请求网关也不计费）。</p>
+</div>
+<div class="section level3">
 <h3 id="路线图">路线图<a class="anchor" aria-label="anchor" href="#%E8%B7%AF%E7%BA%BF%E5%9B%BE"></a>
 </h3>
 <ul>
-<li>会话上下文压缩（长会话一键压缩历史，减轻上下文负担）</li>
 <li>小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型）</li>
 <li>子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）</li>
 </ul>

@@ -57,13 +57,34 @@
   }
 }
 
-# /\u547D\u4EE4\uFF1A\u8FD4\u56DE "exit" \u8868\u793A\u9000\u51FA\u5FAA\u73AF\uFF0C"reset" \u8868\u793A\u91CD\u5EFA\u4F1A\u8BDD\uFF0C\u5176\u4F59\u4E3A\u5DF2\u5904\u7406
-.dai_cli_command <- function(line) {
+# /\u547D\u4EE4\uFF1A\u8FD4\u56DE "exit" \u8868\u793A\u9000\u51FA\u5FAA\u73AF\uFF0C"reset" \u8868\u793A\u91CD\u5EFA\u4F1A\u8BDD\uFF0C\u5176\u4F59\u4E3A\u5DF2\u5904\u7406\u3002
+# /compact \u9700\u8981\u4F1A\u8BDD\u5BF9\u8C61\uFF08\u538B\u7F29\u6838\u5FC3\u4E0E\u9762\u677F\u5171\u7528 compact.R\uFF09\uFF1B
+# agent/cfg \u5E26\u7F3A\u7701\u503C\uFF0C\u65E7\u7B7E\u540D\u8C03\u7528\u4E0E\u6D4B\u8BD5\u4E0D\u53D7\u5F71\u54CD\u3002
+.dai_cli_command <- function(line, agent = NULL, cfg = dairh_config_get()) {
   parts <- strsplit(trimws(line), "[[:space:]]+")[[1]]
   cmd <- tolower(parts[[1]] %||% "")
   switch(cmd,
     "/exit" = , "/quit" = , "/q" = , "/bye" = "exit",
     "/clear" = , "/new" = "reset",
+    "/compact" = {
+      if (is.null(agent)) {
+        cat("  \u4F1A\u8BDD\u4E0D\u53EF\u7528\uFF08\u521D\u59CB\u5316\u5931\u8D25\u6216\u5C1A\u672A\u542F\u52A8\uFF09\u3002\n")
+      } else {
+        res <- tryCatch(
+          .dairh_compact_turns(agent, cfg),
+          error = function(e) list(ok = FALSE, msg = conditionMessage(e))
+        )
+        if (isTRUE(res$ok)) {
+          cat(sprintf(
+            "  \u5DF2\u538B\u7F29\uFF1A\u539F\u5BF9\u8BDD %s \u8F6E \u2192 \u6458\u8981\uFF08%d \u5B57\uFF09\uFF1B\u786C\u9884\u7B97\u5DF2\u91CD\u7F6E\u3002\n",
+            res$n_old, nchar(res$summary)
+          ))
+        } else {
+          cat("  \u538B\u7F29\u5931\u8D25\uFF1A", res$msg, "\n", sep = "")
+        }
+      }
+      "ok"
+    },
     "/tools" = {
       lt <- dairh_list_tools()
       cat(sprintf("  %-18s %-10s %s\n", "name", "source", "description"))
@@ -77,6 +98,7 @@
       cat(
         "  /help            \u663E\u793A\u672C\u5E2E\u52A9\n",
         "  /clear           \u5F00\u65B0\u4F1A\u8BDD\uFF08\u6E05\u6A21\u578B\u5386\u53F2\uFF0C\u786C\u9884\u7B97\u5F52\u96F6\uFF09\n",
+        "  /compact         \u538B\u7F29\u4E0A\u4E0B\u6587\uFF08\u6A21\u578B\u603B\u7ED3\u5F53\u524D\u4F1A\u8BDD\uFF0C\u91CD\u7F6E\u786C\u9884\u7B97\uFF09\n",
         "  /tools           \u5217\u51FA\u5F53\u524D\u5DE5\u5177\u6E05\u5355\uFF08\u542B\u81EA\u5B9A\u4E49\uFF09\n",
         "  /exit            \u9000\u51FA CLI\n",
         "  \u5176\u5B83\u6587\u5B57\u90FD\u4F5C\u4E3A\u4EFB\u52A1\u53D1\u7ED9 Agent\uFF1B\u5DE5\u5177\u8C03\u7528\u8FC7\u7A0B\u4F1A\u76F4\u63A5\u56DE\u663E\u5728\u63A7\u5236\u53F0\n",
@@ -129,7 +151,7 @@ dairh_cli <- function(cfg = dairh_config_get()) {
     line <- trimws(line)
     if (!nzchar(line)) next
     if (startsWith(line, "/")) {
-      act <- .dai_cli_command(line)
+      act <- .dai_cli_command(line, agent = agent, cfg = cfg)
       if (identical(act, "exit")) {
         cat("\u518D\u89C1\uFF01\n")
         break

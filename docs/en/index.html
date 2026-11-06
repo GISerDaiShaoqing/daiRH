@@ -95,7 +95,8 @@ remotes::install_github("GISerDaiShaoqing/daiRH")</code></pre>
         <h6><i class="fa fa-gavel me-1"></i>Runtime governance</h6>
         <p>Prompt advice becomes enforced rules: hard step budget per user turn, hooks that can
         veto or rewrite arguments/results, and full JSONL traceability of every tool call
-        (main and sub agents on one timeline).</p>
+        (main and sub agents on one timeline). Per-request token usage is appended to a JSONL
+        log, aligned with per-request billing gateways.</p>
       </div>
       <div class="feature-card">
         <h6><i class="fa fa-image me-1"></i>Images in chat</h6>
@@ -115,9 +116,11 @@ remotes::install_github("GISerDaiShaoqing/daiRH")</code></pre>
         loaded on demand (progressive disclosure, nothing resident in the context).</p>
       </div>
       <div class="feature-card">
-        <h6><i class="fa fa-clock-rotate-left me-1"></i>Session history</h6>
+        <h6><i class="fa fa-clock-rotate-left me-1"></i>Session history &amp; compaction</h6>
         <p>A drawer lists/searches/reopens past conversations; reopening the panel rehydrates
-        the latest chat, including prior tool calls. Trace and history directories are
+        the latest chat, including prior tool calls. Long sessions can be compacted on demand:
+        the model summarizes the conversation and the context is replaced by that summary,
+        with the original chat archived in the drawer. Trace and history directories are
         configurable.</p>
       </div>
     </div>

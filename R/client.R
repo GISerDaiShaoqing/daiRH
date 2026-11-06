@@ -49,14 +49,15 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
   base_url <- .dai_strip_url(cfg$base_url %||% "")
   params <- ellmer::params(temperature = round(as.numeric(cfg$temperature %||% 0.7), 3))
   provider <- .dairh_norm_provider(cfg$provider)
-  if (identical(provider, "ollama")) {
+  model <- cfg$model %||% ""
+  cl <- if (identical(provider, "ollama")) {
     # chat_ollama \u6784\u9020\u65F6\u4F1A ping \u7AEF\u70B9\uFF1B\u670D\u52A1\u5668\u4E0D\u5728\u7EBF\u65F6\u4E0D\u80FD\u8BA9\u9762\u677F\u76F4\u63A5\u5D29\u6389\uFF1A
     # \u9000\u56DE Ollama \u7684 /v1 OpenAI \u517C\u5BB9\u63A5\u53E3\uFF08\u6784\u9020\u4E0D\u8054\u7F51\uFF0C\u9519\u8BEF\u5EF6\u8FDF\u5230\u8BF7\u6C42\u65F6\u5C55\u793A\uFF09\u3002
     tryCatch(
       ellmer::chat_ollama(
         system_prompt = system_prompt,
         base_url = base_url,
-        model = cfg$model,
+        model = model,
         params = params,
         echo = "none"
       ),
@@ -66,7 +67,7 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
           name = "DaiRH (ollama /v1)",
           system_prompt = system_prompt,
           key = "not-needed",
-          model = cfg$model,
+          model = model,
           params = params,
           headers = .dai_session_headers(paste0(base_url, "/v1"))
         )
@@ -78,7 +79,7 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
       name = "DaiRH",
       system_prompt = system_prompt,
       key = dairh_api_key_value(cfg),
-      model = cfg$model,
+      model = model,
       params = params,
       headers = .dai_session_headers(base_url)
     )
@@ -87,6 +88,9 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
       call. = FALSE
     )
   }
+  # 0.6 \u8D77\u552F\u4E00\u6302\u70B9\uFF1A\u6240\u6709\u7ECF dairh_client() \u51FA\u6765\u7684\u4F1A\u8BDD\uFF08\u4E3B\u5BF9\u8BDD/\u5B50\u4EE3\u7406/\u8D77\u6807\u9898/
+  # \u538B\u7F29\u603B\u7ED3\u5668\uFF09\u90FD\u81EA\u52A8\u8BB0\u5F55 token \u7528\u91CF\uFF08DAIRH_USAGE_LOG=0 \u53EF\u6574\u4F53\u5173\u95ED\uFF09\u3002
+  .dairh_usage_install(cl, model)
 }
 
 #' \u5217\u51FA\u5F53\u524D\u7AEF\u70B9\u53EF\u7528\u7684\u6A21\u578B

@@ -37,7 +37,9 @@ dairh_config_path <- function() {
   invisible(isTRUE(ok))
 }
 
-# \u5E38\u7528\u670D\u52A1\u5546\u9884\u8BBE\uFF1A\u4E00\u952E\u56DE\u586B base_url \u4E0E\u6A21\u578B\u540D
+# \u5E38\u7528\u670D\u52A1\u5546\u9884\u8BBE\uFF1A\u4E00\u952E\u56DE\u586B base_url \u4E0E\u6A21\u578B\u540D\u3002
+# models\uFF08\u53EF\u9009\uFF09\uFF1A\u9884\u8BBE\u5185\u7F6E\u7684\u6A21\u578B\u6E05\u5355\u2014\u2014\u7AEF\u70B9\u672A\u5B9E\u73B0 GET /models \u65F6\uFF0C"\u5217\u51FA\u6A21\u578B"
+# \u6309\u94AE\u56DE\u9000\u5230\u8FD9\u4EFD\u6E05\u5355\uFF080.6 \u8D77\uFF09\u3002Ollama \u52A8\u6001\u53D1\u73B0\u53EF\u9760\uFF0C\u4E0D\u9700\u8981\u5185\u7F6E\u3002
 DAI_LLM_PRESETS <- list(
   `ollama.local` = list(
     provider = "ollama",
@@ -47,19 +49,28 @@ DAI_LLM_PRESETS <- list(
   `deepseek.chat` = list(
     provider = "openai_compatible",
     base_url = "https://api.deepseek.com",
-    model = "deepseek-chat"
+    model = "deepseek-chat",
+    models = c("deepseek-chat", "deepseek-reasoner")
   ),
   `deepseek.reasoner` = list(
     provider = "openai_compatible",
     base_url = "https://api.deepseek.com",
-    model = "deepseek-reasoner"
+    model = "deepseek-reasoner",
+    models = c("deepseek-reasoner", "deepseek-chat")
   ),
   `opencode.go` = list(
     provider = "openai_compatible",
     # OpenCode Go \u8BA1\u5212\u7F51\u5173\uFF08OpenAI \u517C\u5BB9\uFF09\uFF1Bkey \u5728\u8BBE\u7F6E\u91CC\u81EA\u586B\uFF08\u6216\u586B\u73AF\u5883\u53D8\u91CF\u540D\uFF09\u3002
-    # \u8BE5\u7F51\u5173\u672A\u5B9E\u73B0 GET /models\uFF0C\u201C\u5217\u51FA\u6A21\u578B\u201D\u6309\u94AE\u5728\u6B64\u9884\u8BBE\u4E0B\u9700\u624B\u52A8\u586B\u6A21\u578B\u540D\u3002
+    # \u8BE5\u7F51\u5173\u672A\u5B9E\u73B0 GET /models\uFF1A"\u5217\u51FA\u6A21\u578B"\u6309\u94AE\u5728\u6B64\u9884\u8BBE\u4E0B\u81EA\u52A8\u56DE\u9000\u5230\u4E0B\u65B9\u5185\u7F6E\u6E05\u5355\u3002
     base_url = "https://opencode.ai/inference/go/openai/v1",
-    model = "glm-5.3-flash"
+    model = "glm-5.3-flash",
+    models = c(
+      "glm-5.3-flash", "glm-5.3",
+      "kimi-k3.1-pro", "kimi-k3", "kimi-k2.7-code",
+      "deepseek-v4.1-flash", "deepseek-v4-pro",
+      "longcat-2.0", "mimo-v2.6-flash", "mimo-v2.6-pro",
+      "minimax-m3.1-flash"
+    )
   ),
   `zhipu.glm` = list(
     provider = "openai_compatible",
@@ -83,6 +94,9 @@ dairh_config_default <- function() {
     provider = "ollama",
     base_url = "http://localhost:11434",
     model = "gemma4:12b",
+    # \u6A21\u578B\u4E0A\u4E0B\u6587\u7A97\u53E3\uFF08tokens\uFF09\uFF1A\u6807\u9898\u680F"\u4E0A\u4E0B\u6587\u5BB9\u91CF"\u7684\u5206\u6BCD\u3002\u7F51\u5173\u4E00\u822C\u4E0D\u4F1A\u544A\u77E5\uFF0C
+    # \u7559 NA = \u672A\u77E5\uFF08\u6807\u9898\u680F\u53EA\u663E\u793A\u5360\u7528\uFF0C\u4E0D\u663E\u793A\u767E\u5206\u6BD4\uFF09\u3002
+    context_window = NA_real_,
     api_key = "",
     api_key_env = "DAI_API_KEY",
     temperature = 0.7,

@@ -41,6 +41,8 @@ to the project directory.
 Prompt advice becomes enforced rules: hard step budget per user turn,
 hooks that can veto or rewrite arguments/results, and full JSONL
 traceability of every tool call (main and sub agents on one timeline).
+Per-request token usage is appended to a JSONL log, aligned with
+per-request billing gateways.
 
 ###### Images in chat
 
@@ -61,11 +63,13 @@ Drop Markdown files into a conventional directory and they become agent
 skills, loaded on demand (progressive disclosure, nothing resident in
 the context).
 
-###### Session history
+###### Session history & compaction
 
 A drawer lists/searches/reopens past conversations; reopening the panel
-rehydrates the latest chat, including prior tool calls. Trace and
-history directories are configurable.
+rehydrates the latest chat, including prior tool calls. Long sessions
+can be compacted on demand: the model summarizes the conversation and
+the context is replaced by that summary, with the original chat archived
+in the drawer. Trace and history directories are configurable.
 
 ## Function reference
 

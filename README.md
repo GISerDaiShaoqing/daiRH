@@ -38,9 +38,12 @@ devtools::install("path/to/daiRH")
    一键直发面板讲解（Tools → Modify Keyboard Shortcuts 搜 daiRH 绑定）。
    面板里的"讲解选中代码"按钮走快照式上下文，快照只在控制台**运行真实代码**
    时刷新（空回车不保证触发）
-4. 面板顶部两个图标：**🧹 清空对话**（= 开新会话：重置 Agent 会话与单轮硬预算，
-   不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时找回）和
-   **⚙ 设置**；聊天区左上角 **🕘 历史抽屉**（后台模式）：多会话列表/搜索/切换，
+4. 面板标题栏只留两个图标：**🧹 清空对话**（= 开新会话：重置 Agent 会话与
+   单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时
+   找回）和 **⚙ 设置**（provider·模型·工具数就显示在标题栏）；
+   **输入框下方的状态栏**实时显示本会话累计 token（输入/输出）与上下文
+   容量，右侧是 **压缩上下文** 按钮（长会话一键压缩，见下文）；
+   聊天区左上角 **🕘 历史抽屉**（后台模式）：多会话列表/搜索/切换，
    重开面板自动续接最近一次会话；四个快捷按钮：
    - **解释当前文件** / **讲解选中代码** / **审查当前文件** / **R 文档问答**
 
@@ -67,7 +70,7 @@ daiRH::dairh_cli()
 
 ASCII 大字启动横幅（带动画）→ `daiRH ❯` 提示符循环：任务直接敲，模型流式输出、
 工具调用过程实时回显，每轮结束报"工具调用 N 步 / 预算"。
-`/help` 看命令，`/clear` 开新会话，`/tools` 列工具，`/exit` 退出。
+`/help` 看命令，`/clear` 开新会话，`/compact` 压缩上下文，`/tools` 列工具，`/exit` 退出。
 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。
 
 ### 关闭助手（运行模式说明）
@@ -93,7 +96,8 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 |---|---|
 | `provider` | `ollama`（走 `chat_ollama`）或 `openai_compatible`（DeepSeek/GLM/Kimi/任意兼容网关） |
 | `base_url` | 如 `http://localhost:11434`（本机 Ollama）、`https://api.deepseek.com` |
-| `model` | 模型名；设置里可"列出模型"自动发现 || `api_key` / `api_key_env` | key 直填，或写环境变量名（如 `DAI_API_KEY`）；Ollama 可留空 |
+| `model` | 模型名；设置里可"列出模型"自动发现（网关不支持时回退预设内置清单） || `context_window` | 模型上下文窗口（tokens，标题栏"上下文容量"的分母；留空 = 未知，只显示占用） |
+| `api_key` / `api_key_env` | key 直填，或写环境变量名（如 `DAI_API_KEY`）；Ollama 可留空 |
 | `temperature` | 采样温度 |
 | `run_mode` | `bg`（默认，后台运行，不占控制台）或 `gadget`（经典模式，控制台同步占用） |
 | `max_steps` | Agent 单轮工具调用步数：提示词约束 + **硬预算**（超出即拦截，新消息自动重置） |
@@ -118,7 +122,8 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 **API key 自己填**（key 直填，或填环境变量名——想和 codex 完全同源就在
 "API Key" 框里填 `env:变量名`）。该网关走 OpenAI 兼容协议（实测
 `/chat/completions` 可用；未提供 `GET /models`，故"列出模型"在此预设下
-会提示手动填模型名）。网关要求 `x-opencode-session` 会话头，插件已自动
+回退到内置模型清单，点选回填、手填仍然可用）。网关要求 `x-opencode-session`
+会话头，插件已自动
 生成（每个面板一次会话 ID，无需配置）。注意额度按"次"计：面板每次成功
 回复消耗 1 次。若报 `401 Invalid credential`，去 opencode.ai 控制台核对
 Go 计划的 API key（网页登录 cookie 不是 key）。
@@ -218,9 +223,23 @@ dairh_add_hook("pre_tool", ..., name = "guard-env")
 会话；单轮硬预算按新会话重新计。设置里 `history` 可整体关掉，`history_title`
 控制 LLM 自动命名。gadget / CLI 模式不持久化。
 
+### 上下文压缩与 token 计量
+
+长会话把上下文撑大后，点输入框右侧的**压缩上下文**（CLI 用 `/compact`）：
+主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat，
+1 次请求），模型上下文替换为摘要，单轮硬预算重置；原对话存入历史抽屉
+可随时找回，聊天记录保留并附压缩横幅。标题栏同时显示**累计 token（输入/
+输出）**与**上下文占用**（最近一次请求的输入 token）；在设置里填上模型的
+`context_window` 后，还会显示"上下文 45k / 1M (4.5%)"这样的容量百分比。
+
+每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会
+追加一行 jsonl 到 `tools::R_user_dir("daiRH", "data")/usage/usage.jsonl`
+（`source/model/ok/input/output/cache_read[/cost]`，与按次计费网关的
+对账口径一致）；环境变量 `DAIRH_USAGE_LOG=0` 整体关闭。请求出错不记
+（错误请求网关也不计费）。
+
 ### 路线图
 
-- 会话上下文压缩（长会话一键压缩历史，减轻上下文负担）
 - 小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型）
 - 子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）
 
