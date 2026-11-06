@@ -72,13 +72,27 @@
 #    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254
 Rscript -e "testthat::test_local('<包目录>')"
 
-# 2) 装进系统库（Windows 例）
+# 2) 装 CI 同参数的本地 R CMD check 门（0.5.1 之前缺这道门发生过：
+#    Rd 漏 @param 四平台齐红）。判据 Status: OK。两个坑（实测）：
+#    a. 必须在 PowerShell/cmd 里跑且清空 LANG/LC_CTYPE/LC_ALL/LANGUAGE——
+#       Git Bash 的 C.UTF-8 会让 R 启动喷 "Setting LC_CTYPE failed"，
+#       check 收集子进程 stderr 直接伪造 WARNING+ERROR；
+#    b. 必须 --no-manual（CI 的 r-lib action 默认就带）：本地 pdflatex 对
+#       中文 Rd 过不了 inputenc，纯噪声。
+powershell -Command "foreach ($v in 'LANG','LC_CTYPE','LC_ALL','LANGUAGE'){Remove-Item Env:$v};
+  $env:_R_CHECK_CRAN_INCOMING_='false'; $env:_R_CHECK_URLS_CRAN_='false';
+  & '<R目录>/bin/R.exe' CMD build '<包目录>';
+  & '<R目录>/bin/R.exe' CMD check --no-manual --as-cran '<包目录>_x.y.z.tar.gz'"
+#    （powershell 要先 cd 到自己工作的临时目录里，build 产物落在那里）
+
+# 3) 装进系统库（Windows 例）
 R.exe --vanilla CMD INSTALL --no-multiarch -l <R 库目录> <包目录>
 
-# 3) 手改了 roxygen 注释之后
+# 4) 手改了 roxygen 注释之后
 Rscript -e "roxygen2::roxygenise('<包目录>' )"   # 再跟 scripts/fix_rd.R
+#    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR
 
-# 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）
+# 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）
 Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 ```
 
@@ -105,7 +119,10 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 ## 发布清单
 
 1. 改名包：`DESCRIPTION` Version → NEWS.md 顶部加段 → 测试全绿 →
-   roxygenise + fix_rd.R → pkgdown 重建。
+   roxygenise + fix_rd.R → **本地 R CMD check（`--no-manual --as-cran`，
+   见常用流程第 2 步，Status: OK）** → pkgdown 重建。
+   （0.5.0 曾因只跑单测不跑 as-cran 检查，`dairh_read_skill.Rd` 漏
+   `@param name` 直接四平台齐红——warn 级才会伤盯 CI 的人，别省这道门）
 2. `git status` 自查无额外杂物后由维护者 commit + push（等 CI 四平台绿）。
 3. `git tag vX.Y.Z` 并推送；GitHub Release 页描述贴 NEWS 对应段落。
 4. 发版前后跑一遍密钥足迹自检（仓库/tarball/历史三面）。

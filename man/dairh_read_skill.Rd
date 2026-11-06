@@ -7,6 +7,9 @@
 \usage{
 dairh_read_skill(name = "")
 }
+\arguments{
+\item{name}{技能名；留空则列出技能清单，给名读取全文}
+}
 \value{
 技能说明文本（字符向量，长度 1）
 }
