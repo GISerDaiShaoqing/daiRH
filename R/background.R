@@ -177,6 +177,12 @@ dairh_bridge_start <- function() {
       l <- suppressWarnings(as.integer(args$line %||% 1))
       if (nzchar(p) && isTRUE(dairh_nav(p, l))) "ok" else "fail"
     },
+    viewer = {
+      # show_html \u7684\u843D\u5730\u7AEF\uFF1A\u5728 RStudio \u4E3B\u4F1A\u8BDD\u91CC\u6253\u5F00 Viewer\uFF08\u65E0 RStudio \u9000\u6D4F\u89C8\u5668\uFF09
+      p <- as.character(args$path %||% "")
+      if (!nzchar(p) || !file.exists(p)) stop("viewer: \u6587\u4EF6\u4E0D\u5B58\u5728: ", p)
+      if (isTRUE(.dairh_open_viewer(p))) "ok" else "fail"
+    },
     stop("unknown bridge op: ", op)
   )
 }

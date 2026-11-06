@@ -443,11 +443,10 @@ test_that("orphan sweep: callr-fingerprinted child killed; self pid only de-regi
 })
 
 local_test_trace_dir()
-test_that("show_plot prep: guards path/ext/size and queues for panel bus", {
+test_that("show_plot prep: guards path/ext/size and returns absolute path", {
   tmpd <- file.path(tempdir(), paste0("dairh-plot-", as.integer(Sys.time())))
   dir.create(tmpd, recursive = TRUE, showWarnings = FALSE)
   withr::defer(unlink(tmpd, recursive = TRUE), envir = parent.frame())
-  withr::defer(.dai_panel_bus$img <- NULL, envir = parent.frame())
 
   ok_png <- file.path(tmpd, "ok.png")
   con <- file(ok_png, open = "wb")
@@ -466,9 +465,7 @@ test_that("show_plot prep: guards path/ext/size and queues for panel bus", {
 
   r <- .dai_show_plot_prep("ok.png", base = tmpd, restrict = TRUE)
   expect_true(r$ok)
-  expect_identical(.dai_panel_bus$img$path,
-    normalizePath(ok_png, winslash = "/"))
-  expect_identical(.dai_panel_bus$img$kind, "image/png")
+  expect_identical(r$msg, normalizePath(ok_png, winslash = "/"))
 
   outside <- tempfile(fileext = ".png")
   con <- file(outside, open = "wb")
@@ -480,8 +477,83 @@ test_that("show_plot prep: guards path/ext/size and queues for panel bus", {
   expect_match(r$msg, "FAIL", fixed = TRUE)
   r <- .dai_show_plot_prep(outside, base = tmpd, restrict = FALSE)
   expect_true(r$ok)
+})
 
-  .dai_panel_bus$img <- NULL
+local_test_trace_dir()
+test_that("show_plot tool returns Content list (text + inline image) on success", {
+  tmpd <- file.path(tempdir(), paste0("dairh-plot2-", as.integer(Sys.time())))
+  dir.create(tmpd, recursive = TRUE, showWarnings = FALSE)
+  withr::defer(unlink(tmpd, recursive = TRUE), envir = parent.frame())
+  # \u5DE5\u5177\u7684 base = dairh_base_dir() = getwd()\uFF08\u65E0\u5934\u73AF\u5883\uFF09\uFF1B\u5207\u8FDB tmpd \u624D\u8FC7\u8DEF\u5F84\u95F8
+  withr::local_dir(tmpd)
+
+  # content_image_file \u4F1A\u771F\u5B9E\u8BFB\u53D6\u5E76 base64\uFF0C\u9700\u8981\u771F PNG\uFF08prep \u6D4B\u8BD5\u7684\u5047\u5B57\u8282\u591F\u7528\uFF0C\u8FD9\u91CC\u4E0D\u591F\uFF09
+  ok_png <- file.path(tmpd, "ok.png")
+  grDevices::png(ok_png, width = 400, height = 400)
+  graphics::plot(1:3)
+  grDevices::dev.off()
+
+  tools <- dairh_agent_tools(
+    dairh_config_default(), state = .dairh_new_state(dairh_config_default())
+  )
+  expect_true("show_plot" %in% names(tools))
+
+  # FAIL path: plain character, unchanged
+  bad <- file.path(tmpd, "x.txt")
+  writeLines("hi", bad)
+  out_fail <- tools$show_plot(path = bad)
+  expect_true(is.character(out_fail))
+  expect_match(out_fail, "png/jpg", fixed = TRUE)
+
+  # OK path: list of Content (text first, image second)
+  out_ok <- tools$show_plot(path = ok_png)
+  expect_true(is.list(out_ok))
+  expect_length(out_ok, 2L)
+  expect_true(all(vapply(out_ok, inherits, logical(1), "ellmer::Content")))
+  expect_match(out_ok[[1]]@text, "OK", fixed = TRUE)
+  expect_s3_class(out_ok[[2]], "ellmer::ContentImageInline")
+})
+
+local_test_trace_dir()
+test_that("show_html: validates path/ext/size, opens via bridge or browser", {
+  tmpd <- file.path(tempdir(), paste0("dairh-html-", as.integer(Sys.time())))
+  dir.create(tmpd, recursive = TRUE, showWarnings = FALSE)
+  withr::defer(unlink(tmpd, recursive = TRUE), envir = parent.frame())
+
+  expect_match(.dai_show_html("nope.html", base = tmpd, restrict = TRUE),
+    "FAIL", fixed = TRUE)
+  txt <- file.path(tmpd, "x.txt")
+  writeLines("hi", txt)
+  expect_match(.dai_show_html(txt, base = tmpd, restrict = TRUE),
+    "html/htm", fixed = TRUE)
+
+  ok <- file.path(tmpd, "map.html")
+  writeLines("<html><body>leaflet</body></html>", ok)
+
+  # no bridge configured -> browseURL fallback (mocked, nothing really opens)
+  withr::local_options(daiRH.bridge_dir = NULL)
+  local_mocked_bindings(browseURL = function(...) invisible(NULL),
+    .package = "utils")
+  out <- .dai_show_html(ok, base = tmpd, restrict = TRUE)
+  expect_match(out, "OK", fixed = TRUE)
+})
+
+local_test_trace_dir()
+test_that("bridge viewer op: opens existing file, errors on missing", {
+  called <- new.env(parent = emptyenv())
+  called$path <- NULL
+  local_mocked_bindings(
+    .dairh_open_viewer = function(url) {
+      called$path <- url
+      TRUE
+    }
+  )
+  f <- tempfile(fileext = ".html")
+  writeLines("<html></html>", f)
+  withr::defer(unlink(f), envir = parent.frame())
+  expect_identical(.dairh_bridge_exec("viewer", list(path = f)), "ok")
+  expect_identical(called$path, f)
+  expect_error(.dairh_bridge_exec("viewer", list(path = "")), "viewer", fixed = TRUE)
 })
 
 local_test_trace_dir()

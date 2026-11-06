@@ -52,9 +52,11 @@
 |---|---|
 | `R/config.R` | 配置读写/预设表（`DAI_LLM_PRESETS`）/coerce 模板 |
 | `R/client.R` | provider→ellmer 客户端、模型列表、opencode 会话头 |
-| `R/harness.R` | 注册表、钩子、硬预算、trace 写入（harness 核心） |
-| `R/tools_agent.R` | 9 个内置工具（含 `.dai_path_guard` 路径限制闸） |
+| `R/harness.R` | 注册表、钩子（拦截/参数改写）、硬预算、trace 写入（harness 核心） |
+| `R/tools_agent.R` | 内置工具（含 `.dai_path_guard` 路径限制闸；名单与 harness.R 的 `.dairh_builtin_tools()` 保持同步） |
 | `R/agent.R` | 系统提示词、`dairh_new_agent()` 组装 |
+| `R/subagent.R` | 子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算） |
+| `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
 | `R/context.R` | RStudio 编辑器上下文/主会话桥 |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
@@ -66,7 +68,8 @@
 
 ```sh
 # 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
-#    已安装旧版——0.4 曾因此假红）。本地基线：FAIL 0 | WARN 1 | PASS 178
+#    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧
+#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254
 Rscript -e "testthat::test_local('<包目录>')"
 
 # 2) 装进系统库（Windows 例）

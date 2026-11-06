@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -156,7 +156,7 @@
       </dl></div><div class="section level2">
       <h2 id="harness-">harness：自定义工具与钩子<a class="anchor" aria-label="anchor" href="#harness-"></a></h2>
 
-      <div class="section-desc"><p>把项目特有的能力教给 Agent；pre/post 钩子拦截或改写每次工具调用。</p></div>
+      <div class="section-desc"><p>把项目特有的能力教给 Agent；pre/post 钩子拦截、改写参数或改写每次工具调用。</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -197,6 +197,36 @@
 
         </dt>
         <dd>移除钩子</dd>
+
+        <dt>
+
+          <code><a href="dairh_rewrite_args.html">dairh_rewrite_args()</a></code>
+
+        </dt>
+        <dd>构造 pre_tool 钩子的参数改写返回值</dd>
+      </dl></div><div class="section level2">
+      <h2 id="-skills-">技能库（skills）<a class="anchor" aria-label="anchor" href="#-skills-"></a></h2>
+
+      <div class="section-desc"><p>把领域规程、代码模板放进约定目录，Agent 经 read_skill 工具按需渐进加载。</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="dairh_skills_dir.html">dairh_skills_dir()</a></code>
+
+        </dt>
+        <dd>技能库目录</dd>
+
+        <dt>
+
+          <code><a href="dairh_read_skill.html">dairh_read_skill()</a></code>
+
+        </dt>
+        <dd>查看技能库清单</dd>
       </dl></div><div class="section level2">
       <h2 id="-trace-">调用轨迹（trace）<a class="anchor" aria-label="anchor" href="#-trace-"></a></h2>
 

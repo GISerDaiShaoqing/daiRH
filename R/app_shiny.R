@@ -53,8 +53,11 @@
 #   \u4EE4\u724C\u53D8\uFF09\uFF0C\u4E0D\u56FA\u5B9A scope \u7684\u8BDD\u62BD\u5C49\u4E0E\u81EA\u52A8\u6062\u590D\u90FD\u4F1A\u968F\u7AEF\u53E3\u6F02\u79FB\u800C\u6E05\u96F6\uFF1B
 # - title="auto" \u4F1A\u5728\u7B2C 2 \u6B21\u56DE\u590D\u540E\u514B\u9686 client \u591A\u53D1\u4E00\u6B21\u8C03\u7528\u7ED9\u4F1A\u8BDD\u8D77\u6807\u9898\uFF0C
 #   cfg$history_title \u53EF\u5173\u3002
-.dairh_history_dir <- function() {
-  file.path(tools::R_user_dir("daiRH", "data"), "conversations")
+.dairh_history_dir <- function(cfg = dairh_config_get()) {
+  # 0.5 \u8D77\u53EF\u7ECF config.json \u7684 history_dir \u81EA\u5B9A\u4E49\uFF08\u7559\u7A7A = \u9ED8\u8BA4\u7528\u6237\u6570\u636E\u76EE\u5F55\uFF09\uFF1B
+  # \u6539\u52A8\u540E\u65E7\u4F1A\u8BDD\u4E0D\u4F1A\u4E22\u2014\u2014\u53EA\u662F\u62BD\u5C49\u6307\u5411\u4E86\u65B0\u76EE\u5F55\u3002
+  d <- trimws(as.character(cfg$history_dir %||% ""))
+  if (nzchar(d)) d else file.path(tools::R_user_dir("daiRH", "data"), "conversations")
 }
 
 .dairh_history_enabled <- function(cfg) {
@@ -64,7 +67,7 @@
 .dairh_history_options <- function(cfg) {
   if (!.dairh_history_enabled(cfg)) return(FALSE)
   shinychat::history_options(
-    store = shinychat::FileConversationStore$new(.dairh_history_dir()),
+    store = shinychat::FileConversationStore$new(.dairh_history_dir(cfg)),
     scope = "daiRH",
     title = if (isTRUE(cfg$history_title)) "auto" else NULL
   )
@@ -401,10 +404,6 @@ dairh_panel_ui <- function(cfg = NULL) {
 # \u5426\u5219\u7528\u6237\u53EA\u770B\u5230\u7A7A\u58F3\u9762\u677F\u627E\u4E0D\u5230\u4EFB\u4F55\u7EBF\u7D22\uFF08Provider \u5199\u574F\u65F6\u66FE\u5C31\u662F\u8FD9\u6837\uFF09\u3002
 .dairh_panel_server_impl <- function(cfg) {
   function(input, output, session) {
-    # show_plot \u7684\u9759\u6001\u56FE\u7247\u670D\u52A1\uFF08\u540C\u6E90\u76F8\u5BF9 URL\uFF0C\u89C1 .dai_panel_img_dir \u6CE8\u91CA\uFF09
-    tryCatch(shiny::addResourcePath("dairhimg", .dai_panel_img_dir()),
-      error = function(e) NULL)
-
     init_err <- NULL
     client <- tryCatch(
       dairh_new_agent(cfg),
@@ -503,39 +502,11 @@ dairh_panel_ui <- function(cfg = NULL) {
         "\n\nAgent \u72B6\u6001\u5DF2\u91CD\u7F6E\uFF0C\u5355\u8F6E\u786C\u9884\u7B97\u5DF2\u5F52\u96F6\u3002"
       ), session = session), error = function(e) NULL)
     })
-    # show_plot \u961F\u5217\u6D88\u8D39\uFF1A\u5DE5\u5177\u4FA7\u63A8\u56FE\u8FDB .dai_panel_bus\uFF0C\u8FD9\u91CC\u8F6E\u8BE2\u6295\u8FDB\u804A\u5929\u6D41
+    # \u9009\u4E2D\u76F4\u53D1\u901A\u9053\u8F6E\u8BE2\uFF080.5 \u8D77 show_plot \u56FE\u7247\u76F4\u8FD4\u8FDB\u5BF9\u8BDD\uFF0C\u4E0D\u518D\u6709\u603B\u7EBF\u6D88\u8D39\uFF09\uFF1A
+    # addin\uFF08\u4E3B\u4F1A\u8BDD\uFF09\u5199\u5165\u7684\u5F85\u53D1\u9001\u63D0\u793A\uFF0C\u8FD9\u91CC\u7EA6\u534A\u79D2\u5185\u6D88\u8D39\u3002
+    # \u4E0D\u4F9D\u8D56\u4E3B\u4F1A\u8BDD later/\u63A7\u5236\u53F0\u6D3B\u52A8\u2014\u2014\u7A7A\u56DE\u8F66\u4E0D\u5237\u65B0\u5FEB\u7167\u4E5F\u4E0D\u5F71\u54CD\u8FD9\u6761\u8DEF\u3002
     shiny::observe({
       shiny::invalidateLater(400, session)
-      img <- .dai_panel_bus$img
-      if (is.null(img)) return()
-      .dai_panel_bus$img <- NULL
-      # shinychat \u524D\u7AEF\u6253\u5305\u4E86 hast-util-sanitize\uFF08GitHub \u767D\u540D\u5355\uFF09\uFF1A
-      # img src \u53EA\u653E\u884C http/https\uFF0Cdata:URI \u4F1A\u88AB\u5265\u6210\u7834\u56FE\u3002
-      # \u6240\u4EE5\u628A\u56FE\u62F7\u8FDB\u9762\u677F\u9759\u6001\u670D\u52A1\u76EE\u5F55\uFF0C\u7528\u540C\u6E90\u76F8\u5BF9 URL \u5F15\u7528\u3002
-      d <- .dai_panel_img_dir()
-      fname <- paste0("p-", format(Sys.time(), "%Y%m%d-%H%M%S"), "-",
-        as.integer(runif(1, 1, 1e6)), ".",
-        tolower(tools::file_ext(img$path)))
-      copied <- tryCatch({
-        file.copy(img$path, file.path(d, fname), overwrite = TRUE)
-      }, error = function(e) FALSE)
-      if (!isTRUE(copied)) return()
-      tryCatch(shinychat::chat_append_message("chat",
-        list(role = "assistant", content = htmltools::tags$img(
-          src = paste0("dairhimg/", fname),
-          alt = basename(img$path),
-          style = "max-width:100%;border-radius:10px;"
-        )),
-        chunk = FALSE, session = session), error = function(e) NULL)
-      # \u987A\u624B\u6E05\u7406 24h \u524D\u7684\u65E7\u56FE\uFF08\u76EE\u5F55\u53EA\u5B58\u62F7\u8D1D\uFF0C\u4E0D\u5B58\u539F\u4EF6\uFF09
-      tryCatch({
-        old <- list.files(d, full.names = TRUE)
-        info <- file.info(old)
-        unlink(old[is.finite(info$mtime) &
-          difftime(Sys.time(), info$mtime, units = "days") > 1])
-      }, error = function(e) NULL)
-      # \u9009\u4E2D\u76F4\u53D1\u901A\u9053\uFF1Aaddin\uFF08\u4E3B\u4F1A\u8BDD\uFF09\u5199\u5165\u7684\u5F85\u53D1\u63D0\u793A\uFF0C\u8FD9\u91CC\u7EA6\u534A\u79D2\u5185\u6D88\u8D39\u3002
-      # \u4E0D\u4F9D\u8D56\u4E3B\u4F1A\u8BDD later/\u63A7\u5236\u53F0\u6D3B\u52A8\u2014\u2014\u7A7A\u56DE\u8F66\u4E0D\u5237\u65B0\u5FEB\u7167\u4E5F\u4E0D\u5F71\u54CD\u8FD9\u6761\u8DEF\u3002
       pp <- tryCatch(.dairh_take_pending_prompt(), error = function(e) NULL)
       if (!is.null(pp)) {
         if (is.null(client)) {
@@ -725,6 +696,22 @@ dairh_app <- function(cfg = dairh_config_get()) {
       shiny::checkboxInput("dai_history_title",
         "\u4F1A\u8BDD\u81EA\u52A8\u547D\u540D\uFF08LLM \u770B\u524D\u4E24\u8F6E\u5BF9\u8BDD\u8D77\u6807\u9898\uFF0C\u591A\u4E00\u6B21\u8C03\u7528\uFF09",
         value = isTRUE(cfg$history_title)
+      ),
+      shiny::textInput("dai_history_dir",
+        "\u4F1A\u8BDD\u5386\u53F2\u76EE\u5F55\uFF08\u7559\u7A7A = \u9ED8\u8BA4\u7528\u6237\u6570\u636E\u76EE\u5F55\uFF1B\u6539\u540E\u65E7\u4F1A\u8BDD\u4E0D\u4E22\uFF0C\u62BD\u5C49\u6307\u5411\u65B0\u76EE\u5F55\uFF09",
+        value = cfg$history_dir %||% ""
+      ),
+      shiny::textInput("dai_trace_dir",
+        "\u5DE5\u5177\u8F68\u8FF9\u76EE\u5F55\uFF08\u7559\u7A7A = \u9ED8\u8BA4 cache \u76EE\u5F55\uFF09",
+        value = cfg$trace_dir %||% ""
+      ),
+      shiny::checkboxInput("dai_allow_subagent",
+        "\u5141\u8BB8\u5B50\u4EE3\u7406\u59D4\u6D3E\uFF08delegate_task\uFF1B\u6DF1\u5EA6\u9501 1 \u5C42\uFF0C\u72EC\u7ACB\u786C\u9884\u7B97\uFF09",
+        value = isTRUE(cfg$allow_subagent)
+      ),
+      shiny::numericInput("dai_subagent_steps",
+        "\u5B50\u4EE3\u7406\u5355\u8F6E\u786C\u6B65\u6570\uFF08subagent_max_steps\uFF09",
+        value = cfg$subagent_max_steps %||% 8, min = 1, max = 60, step = 1
       )
     )
   )
@@ -861,9 +848,16 @@ dairh_settings_observers <- function(input, output, session, cfg, standalone = F
         bg
       },
       trace = isTRUE(input$dai_trace),
+      trace_dir = trimws(input$dai_trace_dir %||% ""),
       tools_profile = trimws(input$dai_tools_profile %||% ""),
       history = isTRUE(input$dai_history),
-      history_title = isTRUE(input$dai_history_title)
+      history_dir = trimws(input$dai_history_dir %||% ""),
+      history_title = isTRUE(input$dai_history_title),
+      allow_subagent = isTRUE(input$dai_allow_subagent),
+      subagent_max_steps = {
+        s <- suppressWarnings(as.integer(input$dai_subagent_steps %||% 8L))
+        if (length(s) != 1L || is.na(s) || s < 1L) 8L else s
+      }
     )
     if (standalone) {
       shiny::stopApp()

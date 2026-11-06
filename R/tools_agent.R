@@ -37,20 +37,8 @@
   norm
 }
 
-# show_plot \u7684\u56FE\u7247\u6295\u9012\u603B\u7EBF\uFF1A\u5DE5\u5177\u4FA7\u6821\u9A8C\u540E\u63A8\u5230\u8FD9\u91CC\uFF0Capp_shiny \u7684 chat \u6A21\u5757
-# \u8F6E\u8BE2\u6D88\u8D39\uFF08\u6E32\u67D3\u8FDB\u804A\u5929\u6D41\uFF09\u3002\u73AF\u5883\u7EA7\u5355\u98DE\u69FD\u4F4D\uFF1A\u65B0\u56FE\u8986\u76D6\u65E7\u56FE\u3002
-.dai_panel_bus <- new.env(parent = emptyenv())
-
-# show_plot \u56FE\u7247\u7684\u9759\u6001\u670D\u52A1\u76EE\u5F55\uFF1A\u9762\u677F app \u628A\u5B83\u6CE8\u518C\u6210 shiny \u8D44\u6E90\u8DEF\u5F84\uFF0C
-# \u804A\u5929\u91CC\u7528\u540C\u6E90\u76F8\u5BF9 URL \u5F15\u7528\u3002\u4E0D\u80FD\u7528 data:URI\u2014\u2014shinychat \u524D\u7AEF\u6253\u5305\u4E86
-# hast-util-sanitize\uFF08GitHub \u767D\u540D\u5355\uFF09\uFF0Cimg src \u53EA\u653E\u884C http/https\uFF0Cdata: \u4F1A\u88AB\u5265\u6389\u3002
-.dai_panel_img_dir <- function() {
-  d <- file.path(tools::R_user_dir("daiRH", "cache"), "panel-imgs")
-  dir.create(d, recursive = TRUE, showWarnings = FALSE)
-  d
-}
-
-# \u6821\u9A8C\u5E76\u628A\u56FE\u7247\u52A0\u5165\u9762\u677F\u663E\u793A\u961F\u5217\uFF08\u53EF\u5355\u6D4B\uFF09
+# show_plot \u6821\u9A8C\u5668\uFF080.5 \u8D77\u56FE\u4E0D\u8FDB\u9762\u677F\u603B\u7EBF\uFF1A\u5DE5\u5177\u76F4\u63A5\u8FD4\u56DE Content \u5217\u8868\u8FDB\u5BF9\u8BDD\uFF0C
+# shinychat 0.5 \u7684\u5DE5\u5177\u5361\u7247\u539F\u751F\u6E32\u67D3\uFF0C\u5386\u53F2\u91CD\u653E\u4E5F\u4E0D\u4E22\u2014\u2014\u603B\u7EBF/\u9759\u6001\u56FE\u76EE\u5F55\u5DF2\u9000\u5F79\uFF09\u3002
 # \u8FD4\u56DE list(ok, msg)\uFF1Bok=TRUE \u65F6 msg \u4E3A\u7EDD\u5BF9\u8DEF\u5F84
 .dai_show_plot_prep <- function(path, base, restrict) {
   p <- tryCatch(.dai_path_guard(path, base = base, restrict = restrict),
@@ -81,8 +69,42 @@
       "FAIL: \u56FE\u7247\u8FC7\u5927\uFF08", round(size / 1e6, 1),
       " MB > 4 MB\uFF09\u3002\u8BF7\u7528 png(..., width=, height=, res=) \u751F\u6210\u66F4\u5C0F\u7684\u56FE\u540E\u91CD\u8BD5\u3002")))
   }
-  .dai_panel_bus$img <- list(path = p, kind = kind)
   list(ok = TRUE, msg = p)
+}
+
+# show_html \u5DE5\u5177\u4F53\uFF1A\u6821\u9A8C\u540E\u7ECF\u80FD\u529B\u6865\u5728 RStudio Viewer \u6253\u5F00\uFF08leaflet/mapview \u7B49
+# \u4EA4\u4E92\u5730\u56FE\u3001htmlwidgets \u8F93\u51FA\u7684\u6700\u8F7B\u901A\u9053\uFF09\uFF1B\u6865\u4E0D\u53EF\u7528\u9000\u7CFB\u7EDF\u6D4F\u89C8\u5668\u3002\u53EF\u5355\u6D4B\u3002
+.dai_show_html <- function(path, base = dairh_base_dir(), restrict = TRUE) {
+  p <- tryCatch(.dai_path_guard(path, base = base, restrict = restrict),
+    error = function(e) NULL)
+  if (is.null(p)) {
+    return(paste0("FAIL: \u8DEF\u5F84\u4E0D\u53EF\u7528\u6216\u8D85\u51FA\u9879\u76EE\u8303\u56F4: ", path))
+  }
+  if (!file.exists(p)) return(paste0("FAIL: \u6587\u4EF6\u4E0D\u5B58\u5728: ", p))
+  ext <- tolower(tools::file_ext(p))
+  if (!identical(ext, "html") && !identical(ext, "htm")) {
+    return(paste0("FAIL: \u4EC5\u652F\u6301 html/htm\uFF0C\u5F53\u524D\u6269\u5C55\u540D: ",
+      if (nzchar(ext)) ext else "\uFF08\u65E0\uFF09"))
+  }
+  size <- tryCatch(file.info(p)$size, error = function(e) NA_real_)
+  if (!is.finite(size) || size <= 0) {
+    return(paste0("FAIL: \u6587\u4EF6\u4E3A\u7A7A\u6216\u4E0D\u53EF\u8BFB: ", p))
+  }
+  if (size > 20e6) {
+    return(paste0("FAIL: \u6587\u4EF6\u8FC7\u5927\uFF08", round(size / 1e6, 1),
+      " MB > 20 MB\uFF09\uFF0C\u8BF7\u7CBE\u7B80\u540E\u518D\u6253\u5F00\u3002"))
+  }
+  res <- .dairh_bridge_call("viewer", list(path = p), timeout_s = 5)
+  if (length(res) > 0L && is.null(attr(res, "bridge_fail"))) {
+    return(paste0("OK: \u5DF2\u5728 RStudio Viewer \u6253\u5F00 ", p))
+  }
+  # \u6865\u4E0D\u53EF\u7528\uFF08CLI/gadget/\u6865\u6389\u7EBF\uFF09\uFF1A\u9000\u7CFB\u7EDF\u6D4F\u89C8\u5668
+  shown <- tryCatch({ utils::browseURL(p); TRUE }, error = function(e) FALSE)
+  if (isTRUE(shown)) {
+    paste0("OK: \u672A\u8FDE\u4E0A RStudio \u80FD\u529B\u6865\uFF0C\u5DF2\u7528\u7CFB\u7EDF\u6D4F\u89C8\u5668\u6253\u5F00 ", p)
+  } else {
+    paste0("FAIL: \u65E0\u6CD5\u6253\u5F00 ", p, "\uFF08\u6865\u4E0D\u53EF\u7528\u4E14\u6D4F\u89C8\u5668\u8C03\u7528\u5931\u8D25\uFF09")
+  }
 }
 
 # ---- \u7EAF\u903B\u8F91\uFF1A\u552F\u4E00\u5339\u914D\u66FF\u6362\uFF08\u53EF\u5355\u6D4B\uFF09 -----------------------------------------
@@ -463,10 +485,13 @@
 #' @param cfg [dairh_config_get()] \u7684\u914D\u7F6E\u5217\u8868
 #' @param state harness \u4F1A\u8BDD\u72B6\u6001\uFF08\u4E00\u822C\u7531 [dairh_new_agent()] \u521B\u5EFA\u5E76\u6301\u6709\uFF1B
 #'   \u76F4\u63A5\u8C03\u7528\u672C\u51FD\u6570\u65F6\u81EA\u52A8\u65B0\u5EFA\uFF09
+#' @param exclude \u4ECE\u6700\u7EC8\u5DE5\u5177\u96C6\u91CC\u6392\u9664\u7684\u5DE5\u5177\u540D\uFF08\u5B50\u4EE3\u7406\u6784\u5EFA\u65F6\u7528\u5B83
+#'   \u6392\u9664 delegate_task \u81EA\u8EAB\uFF0C\u9632\u9012\u5F52\uFF1B\u4E00\u822C\u7528\u4E0D\u5230\uFF09
 #' @return \u547D\u540D\u5217\u8868\uFF1B\u6BCF\u4E2A\u5143\u7D20\u662F ellmer Tool \u5BF9\u8C61\uFF08\u53EF\u7528 `chat$register_tool()` \u6CE8\u518C\uFF09\uFF1B
 #'   \u9644\u5C5E\u5C5E\u6027 `.dairh_state` \u662F\u5BF9\u5E94\u7684\u72B6\u6001\u73AF\u5883
 #' @export
-dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state(cfg)) {
+dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state(cfg),
+                              exclude = character(0)) {
   base <- dairh_base_dir()
   restrict <- isTRUE(cfg$restrict_paths)
   allow_edit <- isTRUE(cfg$allow_edit)
@@ -597,17 +622,56 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
     function(path) {
       r <- .dai_show_plot_prep(path, base = base, restrict = restrict)
       if (isTRUE(r$ok)) {
-        paste0("OK: \u5DF2\u8BF7\u6C42\u9762\u677F\u5728\u804A\u5929\u4E2D\u663E\u793A\u8BE5\u56FE\uFF08", r$msg,
-          "\uFF09\u3002\u82E5\u9762\u677F\u672A\u663E\u793A\uFF08\u5982 CLI/\u63A7\u5236\u53F0\u6A21\u5F0F\uFF09\uFF0C\u8BF7\u544A\u77E5\u7528\u6237\u76F4\u63A5\u6253\u5F00\u8BE5\u6587\u4EF6\u3002")
+        # 0.5 \u76F4\u8FD4\uFF1A\u6587\u672C + \u56FE\u7247\u4F5C\u4E3A\u5DE5\u5177\u7ED3\u679C\u8FDB\u5BF9\u8BDD\uFF08ellmer 0.5 \u5B98\u65B9\u652F\u6301 Content \u5217\u8868\uFF09\u3002
+        # \u9762\u677F\u5DE5\u5177\u5361\u7247\u5185\u8054\u6E32\u67D3\u3001\u968F\u4F1A\u8BDD\u5386\u53F2\u91CD\u653E\uFF1B\u652F\u6301\u89C6\u89C9\u7684\u7AEF\u70B9\u4E0A\u6A21\u578B\u80FD\u771F\u6B63\u770B\u56FE\u5206\u6790\uFF0C
+        # \u7EAF\u6587\u672C\u7AEF\u70B9\u53EA\u770B\u5230\u6587\u5B57\u90E8\u5206\uFF08openai_compatible \u8D70\u964D\u7EA7\u56DE\u9000\uFF0C\u5B9E\u6D4B\u65E0\u5BB3\uFF09\u3002
+        list(
+          ellmer::ContentText(text = paste0(
+            "OK: \u56FE\u7247\u5DF2\u8FDB\u5165\u5BF9\u8BDD\uFF08", r$msg,
+            "\uFF09\u3002\u8BF7\u57FA\u4E8E\u56FE\u7247\u7EE7\u7EED\u5206\u6790\u3002")),
+          ellmer::content_image_file(r$msg, resize = "low")
+        )
       } else {
         r$msg
       }
     },
-    "\u628A\u5DF2\u751F\u6210\u7684\u56FE\u7247\uFF08png/jpg/webp\uFF0C\u22644MB\uFF09\u663E\u793A\u5728\u804A\u5929\u7A97\u53E3\u91CC\u3002",
+    "\u628A\u5DF2\u751F\u6210\u7684\u56FE\u7247\uFF08png/jpg/webp\uFF0C\u22644MB\uFF09\u76F4\u63A5\u8FD4\u56DE\u8FDB\u5BF9\u8BDD\uFF1A\u804A\u5929\u91CC\u5185\u8054\u663E\u793A\uFF0C\u652F\u6301\u89C6\u89C9\u7684\u6A21\u578B\u8FD8\u80FD\u770B\u56FE\u5206\u6790\u3002",
     arguments = list(
       path = ellmer::type_string("\u56FE\u7247\u6587\u4EF6\u8DEF\u5F84\uFF08\u76F8\u5BF9\u9879\u76EE\u76EE\u5F55\u6216\u7EDD\u5BF9\u8DEF\u5F84\uFF09", required = TRUE)
     )
   )
+
+  tools$show_html <- ellmer::tool(
+    function(path) {
+      .dai_show_html(path, base = base, restrict = restrict)
+    },
+    "\u628A\u9879\u76EE\u91CC\u7684 HTML \u6587\u4EF6\uFF08\u5982 leaflet/mapview \u4EA4\u4E92\u5730\u56FE\u3001htmlwidgets \u8F93\u51FA\uFF09\u5728 RStudio Viewer \u91CC\u6253\u5F00\uFF1B\u672A\u8FDE\u4E0A\u80FD\u529B\u6865\u65F6\u9000\u7CFB\u7EDF\u6D4F\u89C8\u5668\u3002HTML \u9700\u5148\u4FDD\u5B58\u5230\u9879\u76EE\u76EE\u5F55\u5185\u3002",
+    arguments = list(
+      path = ellmer::type_string("HTML \u6587\u4EF6\u8DEF\u5F84\uFF08\u76F8\u5BF9\u9879\u76EE\u76EE\u5F55\u6216\u7EDD\u5BF9\u8DEF\u5F84\uFF09", required = TRUE)
+    )
+  )
+
+  tools$read_skill <- ellmer::tool(
+    function(name = "") {
+      .dai_read_skill(name)
+    },
+    "\u67E5\u770B\u9879\u76EE\u6280\u80FD\u5E93\u5E76\u6309\u9700\u8BFB\u53D6\uFF1aname \u7559\u7A7A\u5217\u51FA\u53EF\u7528\u6280\u80FD\uFF0C\u7ED9\u5B9A\u540D\u5B57\u8FD4\u56DE\u8BE5\u6280\u80FD\u7684\u5B8C\u6574\u8BF4\u660E\uFF08\u89C4\u7A0B/\u6A21\u677F/\u9886\u57DF\u77E5\u8BC6\uFF09\u3002\u9762\u5BF9\u4E0D\u719F\u6089\u7684\u9886\u57DF\u4EFB\u52A1\u65F6\u5148\u5217\u4E00\u4E0B\u6280\u80FD\u5E93\u3002",
+    arguments = list(
+      name = ellmer::type_string("\u6280\u80FD\u540D\uFF1B\u7559\u7A7A\u5217\u51FA\u5168\u90E8", required = FALSE)
+    )
+  )
+
+  if (isTRUE(cfg$allow_subagent)) {
+    tools$delegate_task <- ellmer::tool(
+      function(task) {
+        .dairh_delegate_task(task, cfg = cfg, state = state)
+      },
+      "\u628A\u4E00\u4E2A\u81EA\u5305\u542B\u7684\u5B50\u4EFB\u52A1\u59D4\u6D3E\u7ED9\u5B50\u4EE3\u7406\u6267\u884C\uFF08\u5B50\u4EE3\u7406\u6709\u540C\u6837\u7684\u5DE5\u5177\u4F46\u770B\u4E0D\u5230\u5F53\u524D\u5BF9\u8BDD\uFF09\uFF0C\u9002\u5408\u6279\u91CF\u9A8C\u8BC1\u3001\u72EC\u7ACB\u8C03\u7814\u7B49\u8DD1\u817F\u6D3B\u3002\u4EFB\u52A1\u63CF\u8FF0\u5FC5\u987B\u81EA\u5305\u542B\uFF1A\u76EE\u6807\u3001\u6D89\u53CA\u7684\u6587\u4EF6\u8DEF\u5F84\u3001\u9A8C\u6536\u6807\u51C6\u3002",
+      arguments = list(
+        task = ellmer::type_string("\u5B50\u4EFB\u52A1\u63CF\u8FF0\uFF08\u81EA\u5305\u542B\uFF09", required = TRUE)
+      )
+    )
+  }
 
   # harness \u5C42\uFF1A\u5185\u7F6E\u5DE5\u5177\u9010\u4E00\u5305\u88C5\uFF08\u94A9\u5B50/\u786C\u9884\u7B97/trace\uFF09\uFF0C
   # \u5E76\u4FEE\u6B63 ellmer \u5BF9\u533F\u540D\u51FD\u6570\u7684\u8BA1\u6570\u5668\u547D\u540D\uFF08\u5426\u5219\u6A21\u578B\u770B\u5230\u7684\u662F tool_001... \uFF09\u3002
@@ -635,6 +699,8 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
     if (!is.null(t)) final[[nm]] <- t
   }
 
+  # \u6DF1\u5EA6\u9501\uFF1A\u5B50\u4EE3\u7406\u6784\u5EFA\u5DE5\u5177\u96C6\u65F6\u6392\u9664 delegate_task\uFF08cfg$allow_subagent \u518D\u5173\u4E00\u5C42\u95F8\uFF09
+  if (length(exclude)) final <- final[setdiff(names(final), exclude)]
   attr(final, ".dairh_state") <- state
   final
 }

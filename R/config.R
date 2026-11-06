@@ -94,9 +94,13 @@ dairh_config_default <- function() {
     system_prompt_extra = "",
     bg_image = "",
     trace = TRUE,
+    trace_dir = "",
     tools_profile = "",
     history = TRUE,
-    history_title = TRUE
+    history_dir = "",
+    history_title = TRUE,
+    allow_subagent = TRUE,
+    subagent_max_steps = 8
   )
 }
 

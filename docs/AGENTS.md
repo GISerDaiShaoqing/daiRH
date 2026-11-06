@@ -61,9 +61,11 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 |----|----|
 | `R/config.R` | 配置读写/预设表（`DAI_LLM_PRESETS`）/coerce 模板 |
 | `R/client.R` | provider→ellmer 客户端、模型列表、opencode 会话头 |
-| `R/harness.R` | 注册表、钩子、硬预算、trace 写入（harness 核心） |
-| `R/tools_agent.R` | 9 个内置工具（含 `.dai_path_guard` 路径限制闸） |
+| `R/harness.R` | 注册表、钩子（拦截/参数改写）、硬预算、trace 写入（harness 核心） |
+| `R/tools_agent.R` | 内置工具（含 `.dai_path_guard` 路径限制闸；名单与 harness.R 的 `.dairh_builtin_tools()` 保持同步） |
 | `R/agent.R` | 系统提示词、[`dairh_new_agent()`](https://gisersqdai.top/daiRH/reference/dairh_new_agent.md) 组装 |
+| `R/subagent.R` | 子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算） |
+| `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
 | `R/context.R` | RStudio 编辑器上下文/主会话桥 |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
@@ -75,7 +77,8 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 
 ``` sh
 # 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
-#    已安装旧版——0.4 曾因此假红）。本地基线：FAIL 0 | WARN 1 | PASS 178
+#    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧
+#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254
 Rscript -e "testthat::test_local('<包目录>')"
 
 # 2) 装进系统库（Windows 例）
@@ -100,6 +103,19 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
     全走一遍再算适配完。
 4.  新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免 “UI
     一套状态、Agent 另一套”的错位。
+
+**shinychat 避坑（实测）**：其客户端 markdown 管道允许 `<img>`
+标签通过但会 剥掉 `data:` 协议的
+src（imgCount=1、naturalWidth=0）——greeting/markdown
+文本里内嵌图不可行。聊天插图走原生 contents 图片通道（show_plot 即此）；
+静态 Logo 放面板自家标记（`.dai_title_logo()`，data URI 复用
+`.dai_image_data_uri()` 并缓存）。
+
+**安装树坑（实测）**：R 装包时不会把 `man/`
+拷进安装树——`system.file("man","figures","logo.png")`
+在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all
+源码目录，测不出这层）。运行时资源双备份：`man/figures/`（源码位置，load_all
+可见）+ `inst/figures/`（硬拷贝，安装树一定在），查找函数两条路径都试。
 
 ## 发布清单
 

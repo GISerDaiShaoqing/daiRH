@@ -2,7 +2,7 @@
 # Chinese assertions use <- <- \uXXXX escapes.
 
 test_that("config roundtrip and default fallback", {
-  tmp <- file.path(tempdir(), paste0("daiRH-test-", as.integer(as.numeric(Sys.time()) * 1000)))
+  tmp <- file.path(tempdir(), paste0("daiRH-test-", as.integer(Sys.time()), "-", Sys.getpid()))
   dir.create(tmp, recursive = TRUE)
   p <- file.path(tmp, "config.json")
   options(daiRH.config_path = p)
@@ -45,4 +45,28 @@ test_that("api key resolution (3 forms)", {
     dairh_api_key_value(list(api_key = "", api_key_env = "DaiRH_NOT_SET_XXX")),
     ""
   )
+})
+
+test_that("0.5 config fields: dirs / subagent settings", {
+  tmp <- file.path(tempdir(), paste0("daiRH-test-05-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  dir.create(tmp, recursive = TRUE)
+  p <- file.path(tmp, "config.json")
+  options(daiRH.config_path = p)
+  on.exit(options(daiRH.config_path = NULL), add = TRUE)
+
+  dairh_config_set(
+    history_dir = "D:/chat-history", trace_dir = "D:/traces",
+    allow_subagent = FALSE, subagent_max_steps = 5
+  )
+  got <- dairh_config_get()
+  expect_equal(got$history_dir, "D:/chat-history")
+  expect_equal(got$trace_dir, "D:/traces")
+  expect_false(got$allow_subagent)
+  expect_equal(got$subagent_max_steps, 5)
+
+  # history dir resolution: cfg wins, default falls back to user data dir
+  expect_identical(.dairh_history_dir(got), "D:/chat-history")
+  expect_identical(.dairh_history_dir(dairh_config_default()),
+    file.path(tools::R_user_dir("daiRH", "data"), "conversations"))
 })

@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
 <h3 id="agent-能做什么示例指令">Agent 能做什么（示例指令）<a class="anchor" aria-label="anchor" href="#agent-%E8%83%BD%E5%81%9A%E4%BB%80%E4%B9%88%E7%A4%BA%E4%BE%8B%E6%8C%87%E4%BB%A4"></a>
 </h3>
 <pre><code>帮我写个分析iris的脚本 analysis.R：按种花瓣长度分箱统计，然后运行验证</code></pre>
-<p>Agent 会：<code>list_files</code> 看项目 → <code>create_file</code> 写脚本 → <code>run_r_code</code> 子进程跑 → 报错时读 <code>stdout/error</code> 自我修正 → 输出结论。<code>edit_file</code> 是<strong>唯一匹配的精确替换</strong>， 失败会自动重读原文修正；成功后在聊天里渲染变更片段（- 删除 / + 新增）并跳转到文件。 画完图让 Agent 调 <code>show_plot</code>：PNG/JPG 直接渲染进聊天气泡，不用去项目里翻文件。</p>
+<p>Agent 会：<code>list_files</code> 看项目 → <code>create_file</code> 写脚本 → <code>run_r_code</code> 子进程跑 → 报错时读 <code>stdout/error</code> 自我修正 → 输出结论。<code>edit_file</code> 是<strong>唯一匹配的精确替换</strong>， 失败会自动重读原文修正；成功后在聊天里渲染变更片段（- 删除 / + 新增）并跳转到文件。 画完图让 Agent 调 <code>show_plot</code>：图片直接作为工具结果进入对话——聊天里内联渲染、 随会话历史重放，支持视觉的模型还能看图继续分析；leaflet 等交互地图用 <code>show_html</code> 在 RStudio Viewer 打开。</p>
 </div>
 <div class="section level3">
 <h3 id="控制台-cliclaude-code-风格">控制台 CLI（claude-code 风格）<a class="anchor" aria-label="anchor" href="#%E6%8E%A7%E5%88%B6%E5%8F%B0-cliclaude-code-%E9%A3%8E%E6%A0%BC"></a>
@@ -193,6 +193,10 @@
 <td>是否记录工具调用轨迹（<code><a href="reference/dairh_trace.html">dairh_trace()</a></code> 查看；默认开）</td>
 </tr>
 <tr>
+<td><code>trace_dir</code></td>
+<td>工具轨迹目录（留空 = 默认 cache 目录；0.5 起可配）</td>
+</tr>
+<tr>
 <td><code>tools_profile</code></td>
 <td>工具脚本路径（启动时 source，注册自定义工具/钩子；后台模式必经通道）</td>
 </tr>
@@ -201,8 +205,20 @@
 <td>会话历史抽屉（仅后台面板）：多会话切换、重开面板自动续接最近会话（默认开）</td>
 </tr>
 <tr>
+<td><code>history_dir</code></td>
+<td>会话历史存储目录（留空 = 默认用户数据目录；0.5 起可配）</td>
+</tr>
+<tr>
 <td><code>history_title</code></td>
 <td>LLM 给会话自动起标题（看前两轮对话，多一次调用；默认开）</td>
+</tr>
+<tr>
+<td><code>allow_subagent</code></td>
+<td>是否注册 <code>delegate_task</code> 子代理委派工具（默认开；深度锁 1 层）</td>
+</tr>
+<tr>
+<td><code>subagent_max_steps</code></td>
+<td>子代理单轮硬步数（默认 8）</td>
 </tr>
 </tbody>
 </table>
@@ -216,7 +232,7 @@
 </h2>
 <p>不只是聊天壳——每次工具调用都会经过统一的 harness 层：</p>
 <pre><code>面板 UI ──► Agent 会话（dairh_new_agent）
-             ├─ ① 工具注册表：内置 8 工具 + dairh_register_tool() 注册的自定义工具
+             ├─ ① 工具注册表：内置 12 工具 + dairh_register_tool() 注册的自定义工具
              ├─ ② 工具包装器：pre/post 钩子 → 硬步数预算 → 执行 → trace 留痕
              └─ ③ tools_profile 脚本：面板启动时自动 source（跨进程注册通道）</code></pre>
 <div class="section level3">
@@ -232,11 +248,11 @@
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="钩子拦截与改写">钩子（拦截与改写）<a class="anchor" aria-label="anchor" href="#%E9%92%A9%E5%AD%90%E6%8B%A6%E6%88%AA%E4%B8%8E%E6%94%B9%E5%86%99"></a>
+<h3 id="钩子拦截改写参数与改写结果">钩子（拦截、改写参数与改写结果）<a class="anchor" aria-label="anchor" href="#%E9%92%A9%E5%AD%90%E6%8B%A6%E6%88%AA%E6%94%B9%E5%86%99%E5%8F%82%E6%95%B0%E4%B8%8E%E6%94%B9%E5%86%99%E7%BB%93%E6%9E%9C"></a>
 </h3>
 <ul>
 <li>
-<code>pre_tool</code>：<code>function(name, args)</code>，返回字符串即拦截本次调用（如禁止碰 <code>.Renviron</code>）</li>
+<code>pre_tool</code>：<code>function(name, args)</code>，返回字符串即拦截本次调用（如禁止碰 <code>.Renviron</code>）； 返回 <code>dairh_rewrite_args(new_args)</code> 则<strong>改写参数</strong>后放行（改写动作记入 trace）</li>
 <li>
 <code>post_tool</code>：<code>function(name, args, result)</code>，返回字符串即替换工具结果（如脱敏）</li>
 </ul>
@@ -244,7 +260,23 @@
 <code class="sourceCode R"><span><span class="fu"><a href="reference/dairh_add_hook.html">dairh_add_hook</a></span><span class="op">(</span><span class="st">"pre_tool"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span>, <span class="va">args</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="va">name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"read_file"</span>, <span class="st">"edit_file"</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Renviron|\\.env$"</span>, <span class="va">args</span><span class="op">$</span><span class="va">path</span> <span class="op"><a href="https://rdrr.io/r/base/Control.html" class="external-link">%||%</a></span> <span class="st">""</span><span class="op">)</span><span class="op">)</span> <span class="st">"敏感文件禁止读写"</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># 参数改写：统一收紧 run_r_code 的超时</span></span>
+<span><span class="fu"><a href="reference/dairh_add_hook.html">dairh_add_hook</a></span><span class="op">(</span><span class="st">"pre_tool"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">name</span>, <span class="va">args</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">name</span>, <span class="st">"run_r_code"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="reference/dairh_rewrite_args.html">dairh_rewrite_args</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">args</span><span class="op">$</span><span class="va">code</span>, timeout_sec <span class="op">=</span> <span class="fl">120</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="子代理委派delegate_task">子代理委派（delegate_task）<a class="anchor" aria-label="anchor" href="#%E5%AD%90%E4%BB%A3%E7%90%86%E5%A7%94%E6%B4%BEdelegate_task"></a>
+</h3>
+<p>独立子任务不用占用主对话：主 Agent 调 <code>delegate_task(task)</code>，一个全新的 Chat 带着同样的 工具集去跑（上下文隔离，子代理看不到主对话；深度锁 1 层防递归；独立硬预算 <code>subagent_max_steps</code>）。适合”跑一遍测试汇总失败项”“独立调研某个包的用法”这类跑腿活。 委派是同步的，期间面板不流式回显子过程。</p>
+</div>
+<div class="section level3">
+<h3 id="技能库skills">技能库（skills）<a class="anchor" aria-label="anchor" href="#%E6%8A%80%E8%83%BD%E5%BA%93skills"></a>
+</h3>
+<p>把领域规程、代码模板、团队约定写进 <code>tools::R_user_dir("daiRH", "data")/skills/</code>： 每个 <code>&lt;name&gt;.md</code>（或 <code>&lt;name&gt;/SKILL.md</code> 目录形态）就是一个技能。Agent 用 <code>read_skill</code> 按需加载——空参列清单、给名读全文（≤ 64KB），不占常驻上下文；技能库非空时系统 提示词会自动提示模型先查技能库。<code><a href="reference/dairh_read_skill.html">daiRH::dairh_read_skill()</a></code> 控制台自检清单。</p>
 </div>
 <div class="section level3">
 <h3 id="硬步数预算">硬步数预算<a class="anchor" aria-label="anchor" href="#%E7%A1%AC%E6%AD%A5%E6%95%B0%E9%A2%84%E7%AE%97"></a>

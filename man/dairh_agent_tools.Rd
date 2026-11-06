@@ -5,13 +5,20 @@
 \alias{dairh_agent_tools}
 \title{构建 DaiRH Agent 的全部工具}
 \usage{
-dairh_agent_tools(cfg = dairh_config_get(), state = .dairh_new_state(cfg))
+dairh_agent_tools(
+  cfg = dairh_config_get(),
+  state = .dairh_new_state(cfg),
+  exclude = character(0)
+)
 }
 \arguments{
 \item{cfg}{\code{\link[=dairh_config_get]{dairh_config_get()}} 的配置列表}
 
 \item{state}{harness 会话状态（一般由 \code{\link[=dairh_new_agent]{dairh_new_agent()}} 创建并持有；
 直接调用本函数时自动新建）}
+
+\item{exclude}{从最终工具集里排除的工具名（子代理构建时用它
+排除 delegate_task 自身，防递归；一般用不到）}
 }
 \value{
 命名列表；每个元素是 ellmer Tool 对象（可用 \code{chat$register_tool()} 注册）；

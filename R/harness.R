@@ -11,7 +11,8 @@
 .dairh_builtin_tools <- function() {
   c(
     "read_file", "list_files", "create_file", "edit_file",
-    "run_r_code", "get_r_help", "workspace_summary", "get_editor_context"
+    "run_r_code", "get_r_help", "workspace_summary", "get_editor_context",
+    "show_plot", "show_html", "read_skill", "delegate_task"
   )
 }
 
@@ -32,6 +33,7 @@
   st$n_calls <- 0L          # \u672C\u8F6E\u5DF2\u53D1\u751F\u7684\u5DE5\u5177\u8C03\u7528\u6570
   st$last_user_n <- NA_integer_  # \u4E0A\u6B21\u8C03\u7528\u65F6\u770B\u5230\u7684 user \u56DE\u5408\u6570
   st$client <- NULL         # dairh_new_agent \u6CE8\u5165\uFF0C\u56DE\u5408\u68C0\u6D4B\u7528
+  st$tag <- "main"          # \u4EE3\u7406\u5C42\u7EA7\uFF08main/sub\uFF0C\u5B50\u4EE3\u7406\u59D4\u6D3E\u65F6\u7F6E sub\uFF09
   st$trace <- isTRUE(cfg$trace)
   st$trace_file <- NULL
   st
@@ -42,7 +44,11 @@
 .dairh_trace_dir <- function() {
   d <- getOption("daiRH.trace_dir")
   if (is.null(d) || !is.character(d) || !nzchar(d)) {
-    d <- file.path(tools::R_user_dir("daiRH", "cache"), "traces")
+    # 0.5 \u8D77\u652F\u6301 config.json \u7684 trace_dir\uFF08\u7559\u7A7A = \u9ED8\u8BA4 cache \u76EE\u5F55\uFF09\uFF1Boption \u4F9B\u6D4B\u8BD5\u8986\u76D6
+    d <- tryCatch(trimws(dairh_config_get()$trace_dir %||% ""), error = function(e) "")
+    if (!is.character(d) || !nzchar(d)) {
+      d <- file.path(tools::R_user_dir("daiRH", "cache"), "traces")
+    }
   }
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
   d
@@ -76,13 +82,24 @@
 #' @return \u6587\u4EF6\u8DEF\u5F84\u5B57\u7B26\u4E32\uFF0C\u6CA1\u6709\u5219 NULL
 #' @export
 dairh_trace_path <- function() {
-  p <- .dairh_harness_env$last_trace
-  if (!is.null(p) && file.exists(p)) return(p)
   d <- .dairh_trace_dir()
   fs <- list.files(d, pattern = "^trace-.*\\.jsonl$", full.names = TRUE)
-  if (!length(fs)) return(NULL)
-  info <- file.info(fs)
-  p <- rownames(info)[order(info$mtime, decreasing = TRUE)][[1]]
+  newest <- NULL
+  if (length(fs)) {
+    info <- file.info(fs)
+    newest <- rownames(info)[order(info$mtime, decreasing = TRUE)][[1]]
+  }
+  # \u7F13\u5B58\u6587\u4EF6\u4E0D\u518D\u4E00\u7968\u5426\u51B3\uFF1A\u591A\u9762\u677F/\u91CD\u5F00\u9762\u677F\u65F6\u76EE\u5F55\u91CC\u4F1A\u51FA\u73B0\u66F4\u65B0\u7684 trace \u6587\u4EF6\uFF0C
+  # \u82E5\u7F13\u5B58\u7684\u6BD4\u6700\u65B0\u8FD8\u65E7\u5C31\u8DDF\u968F\u6700\u65B0\uFF08\u5426\u5219\u4E3B\u4F1A\u8BDD\u91CC\u7684 dairh_trace() \u4F1A\u795E\u79D8\u5730
+  # \u505C\u5728\u65E7\u8FDB\u7A0B\u7684\u6587\u4EF6\u4E0A\u2014\u20140.5 \u5B9E\u6D4B\u8E29\u8FC7\uFF09\u3002
+  p <- .dairh_harness_env$last_trace
+  if (!is.null(p) && file.exists(p) && !is.null(newest) && !identical(newest, p)) {
+    pn <- file.info(p)$mtime
+    nn <- file.info(newest)$mtime
+    if (isTRUE(nn > pn)) p <- newest
+  } else if (is.null(p) || !file.exists(p)) {
+    p <- newest
+  }
   .dairh_harness_env$last_trace <- p
   p
 }
@@ -116,7 +133,8 @@ dairh_trace <- function(n = 20) {
   })
   rows <- Filter(Negate(is.null), rows)
   if (!length(rows)) return(invisible(NULL))
-  keys <- c("ts", "type", "tool", "n_calls", "duration_s", "ok", "veto", "result")
+  keys <- c("ts", "type", "agent", "tool", "n_calls", "duration_s", "ok", "veto",
+    "args_rewritten", "result")
   df <- data.frame(
     lapply(keys, function(k) {
       vapply(rows, function(r) {
@@ -310,6 +328,32 @@ dairh_remove_hook <- function(stage, name) {
   invisible(TRUE)
 }
 
+#' \u6784\u9020 pre_tool \u94A9\u5B50\u7684\u53C2\u6570\u6539\u5199\u8FD4\u56DE\u503C
+#'
+#' \u5728 `pre_tool` \u94A9\u5B50\u91CC\u8FD4\u56DE\u672C\u5BF9\u8C61\uFF08\u800C\u4E0D\u662F\u5B57\u7B26\u4E32/NULL\uFF09\uFF0C\u5373\u53EF**\u6539\u5199**\u672C\u6B21\u5DE5\u5177\u8C03\u7528\u7684
+#' \u53C2\u6570\uFF1A\u540E\u7EED\u94A9\u5B50\u4E0E\u5DE5\u5177\u672C\u8EAB\u6536\u5230\u7684\u90FD\u662F\u6539\u5199\u540E\u7684\u53C2\u6570\uFF0C\u6539\u5199\u52A8\u4F5C\u8BB0\u5165 trace
+#' \uFF08`args_rewritten` \u5B57\u6BB5\uFF0C\u542B\u94A9\u5B50\u540D\u94FE\uFF09\u3002\u5B57\u7B26\u4E32 = \u62E6\u622A\u3001NULL = \u653E\u884C\u7684\u539F\u8BED\u4E49\u4E0D\u53D8\u3002
+#'
+#' @param args \u6539\u5199\u540E\u7684\u53C2\u6570\uFF08\u547D\u540D\u5217\u8868\uFF0C\u952E\u4E0E\u5DE5\u5177\u5F62\u53C2\u4E00\u81F4\uFF1B\u6574\u5305\u66FF\u6362\uFF0C\u4E0D\u505A\u6DF1\u5408\u5E76\uFF09
+#' @return \u5E26\u6807\u8BB0\u7684\u6539\u5199\u5BF9\u8C61\uFF08\u4EC5\u4F5C\u4E3A pre_tool \u94A9\u5B50\u7684\u8FD4\u56DE\u503C\u4F7F\u7528\uFF09
+#' @examples
+#' \dontrun{
+#' # \u7ED9 run_r_code \u7684\u8C03\u7528\u7EDF\u4E00\u6536\u7D27\u8D85\u65F6\uFF08\u53C2\u6570\u6539\u5199\u793A\u4F8B\uFF09
+#' dairh_add_hook("pre_tool", function(name, args) {
+#'   if (identical(name, "run_r_code") && is.character(args$code)) {
+#'     dairh_rewrite_args(list(code = args$code, timeout_sec = 120))
+#'   }
+#' })
+#' }
+#' @export
+dairh_rewrite_args <- function(args) {
+  if (!is.list(args)) stop("args \u5FC5\u987B\u662F\u547D\u540D\u5217\u8868\u3002", call. = FALSE)
+  if (length(args) && (is.null(names(args)) || any(!nzchar(names(args))))) {
+    stop("args \u5FC5\u987B\u662F\u547D\u540D\u5217\u8868\uFF08\u952E\u4E0E\u5DE5\u5177\u5F62\u53C2\u4E00\u81F4\uFF09\u3002", call. = FALSE)
+  }
+  structure(list(args = args), class = "dairh_hook_rewrite")
+}
+
 # ---- \u5DE5\u5177\u5305\u88C5\u5668\uFF08\u94A9\u5B50 + \u9884\u7B97 + trace \u7684\u7EDF\u4E00\u5165\u53E3\uFF09------------------------
 
 # \u628A\u4EFB\u610F\u5DE5\u5177\u51FD\u6570\u5305\u6210\u5E26 harness \u80FD\u529B\u7684 ellmer ToolDef\u3002
@@ -345,6 +389,15 @@ dairh_remove_hook <- function(stage, name) {
     error = function(e) paste(deparse(res), collapse = "\n")
   )
   paste(out, collapse = "\n")
+}
+
+# Content \u7ED3\u679C\u7684 trace \u6458\u8981\uFF1A\u6587\u672C\u90E8\u5206\u53D6 text\uFF0C\u5176\u4F59\u53D6\u7C7B\u540D\uFF08\u56FE\u7247\u672C\u8EAB\u4E0D\u8FDB trace\uFF0C\u53EA\u7559\u7C7B\u540D\u75D5\u8FF9\uFF09
+.dai_content_brief <- function(res) {
+  parts <- if (inherits(res, "ellmer::Content")) list(res) else res
+  out <- vapply(parts, function(el) {
+    if (inherits(el, "ellmer::ContentText")) paste(el@text, collapse = " ") else class(el)[[1]]
+  }, character(1))
+  paste(out, collapse = " | ")
 }
 
 .dairh_args_json <- function(args) {
@@ -406,8 +459,9 @@ dairh_remove_hook <- function(stage, name) {
     )
   } else {
     result <- NULL
-    # pre_tool \u94A9\u5B50\uFF1A\u8FD4\u56DE\u5B57\u7B26\u4E32\u5373\u62E6\u622A
+    # pre_tool \u94A9\u5B50\uFF1A\u5B57\u7B26\u4E32 = \u62E6\u622A\uFF1Bdairh_rewrite_args() = \u6539\u5199\u53C2\u6570\u540E\u653E\u884C\uFF08\u540E\u7EED\u94A9\u5B50\u89C1\u65B0\u53C2\u6570\uFF09
     hooks <- .dairh_harness_env$hooks$pre_tool
+    rewritten_by <- character(0)
     for (nm in names(hooks)) {
       v <- tryCatch(
         hooks[[nm]](name, args),
@@ -417,6 +471,16 @@ dairh_remove_hook <- function(stage, name) {
           NULL
         }
       )
+      if (inherits(v, "dairh_hook_rewrite")) {
+        if (!is.list(v$args)) {
+          warning(sprintf("DaiRH pre_tool \u94A9\u5B50 '%s' \u7684\u6539\u5199\u503C\u4E0D\u5408\u6CD5\uFF08\u9700\u547D\u540D list\uFF09\uFF0C\u5DF2\u5FFD\u7565\u3002", nm),
+            call. = FALSE)
+          next
+        }
+        args <- v$args
+        rewritten_by <- c(rewritten_by, nm)
+        next
+      }
       if (is.character(v) && length(v) >= 1L && nzchar(v[[1]])) {
         veto <- paste0("hook:", nm)
         result <- paste0("FAIL: \uFF08\u94A9\u5B50\u62E6\u622A ", nm, "\uFF09", paste(v, collapse = " "))
@@ -428,37 +492,50 @@ dairh_remove_hook <- function(stage, name) {
         do.call(fn, args),
         error = function(e) paste0("FAIL: ", conditionMessage(e))
       )
-      res_text <- .dairh_result_text(res)
-      # post_tool \u94A9\u5B50\uFF1A\u8FD4\u56DE\u5B57\u7B26\u4E32\u5219\u66FF\u6362\u7ED3\u679C
-      hooks2 <- .dairh_harness_env$hooks$post_tool
-      for (nm in names(hooks2)) {
-        r2 <- tryCatch(
-          hooks2[[nm]](name, args, res_text),
-          error = function(e) {
-            warning(sprintf("DaiRH post_tool \u94A9\u5B50 '%s' \u51FA\u9519\uFF1A%s", nm, conditionMessage(e)),
-              call. = FALSE)
-            NULL
-          }
-        )
-        if (is.character(r2) && length(r2) >= 1L) res_text <- paste(r2, collapse = "\n")
+      # ellmer 0.5 \u5141\u8BB8\u5DE5\u5177\u8FD4\u56DE Content / Content \u5217\u8868\uFF08show_plot \u7684\u56FE\u7247\u76F4\u8FD4\u5373\u6B64\uFF09\uFF1A
+      # \u539F\u6837\u900F\u4F20\u7ED9 ellmer\uFF0C\u4E0D\u505A\u6587\u672C\u6458\u8981\u5316\uFF1Bpost \u94A9\u5B50\u9762\u5411\u6587\u672C\uFF0C\u6B64\u8DEF\u8DF3\u8FC7\u3002
+      res_content <- inherits(res, "ellmer::Content") ||
+        (is.list(res) && length(res) > 0L &&
+          all(vapply(res, inherits, logical(1), "ellmer::Content")))
+      if (res_content) {
+        result <- res
+        res_text <- .dai_content_brief(res)
+      } else {
+        res_text <- .dairh_result_text(res)
+        # post_tool \u94A9\u5B50\uFF1A\u8FD4\u56DE\u5B57\u7B26\u4E32\u5219\u66FF\u6362\u7ED3\u679C
+        hooks2 <- .dairh_harness_env$hooks$post_tool
+        for (nm in names(hooks2)) {
+          r2 <- tryCatch(
+            hooks2[[nm]](name, args, res_text),
+            error = function(e) {
+              warning(sprintf("DaiRH post_tool \u94A9\u5B50 '%s' \u51FA\u9519\uFF1A%s", nm, conditionMessage(e)),
+                call. = FALSE)
+              NULL
+            }
+          )
+          if (is.character(r2) && length(r2) >= 1L) res_text <- paste(r2, collapse = "\n")
+        }
+        result <- res_text
       }
-      result <- res_text
     }
   }
 
-  ok <- !startsWith(result, "FAIL")
+  ok <- if (is.character(result)) !startsWith(result, "FAIL") else TRUE
   dur <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+  trace_result <- if (is.character(result)) result else .dai_content_brief(result)
   .dairh_trace_write(state, list(
     ts = format(t0, "%Y-%m-%d %H:%M:%OS3"),
     pid = Sys.getpid(),
+    agent = state$tag %||% "main",
     type = "tool",
     tool = name,
     n_calls = state$n_calls,
     args = .dai_clip(.dairh_args_json(args), 2000),
+    args_rewritten = if (length(rewritten_by)) paste(rewritten_by, collapse = ",") else NULL,
     duration_s = round(dur, 3),
     ok = ok,
     veto = veto,
-    result = .dai_clip(result, 400)
+    result = .dai_clip(trace_result, 400)
   ))
   result
 }

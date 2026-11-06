@@ -1,5 +1,50 @@
 # Changelog
 
+## daiRH 0.5.0
+
+- **show_plot
+  直返图片通道**：图片不再走面板总线旁路，而是作为工具结果（文本 +
+  `content_image_file`）直接进入对话——shinychat 0.5
+  工具卡片原生内联渲染，并随 会话历史存档重放（顺手修掉
+  0.4.0「绘图消息不随会话恢复」的已知边界）；支持视觉
+  的模型还能真正”看到”图继续分析（openai_compatible/ollama 由 ellmer
+  降级回退为 user turn
+  图片内容，纯文本端点只见文字，实测无害）。面板静态图目录与 400ms
+  轮询总线整体退役。
+- **钩子参数改写**：`pre_tool` 钩子新增第三种返回值
+  `dairh_rewrite_args(args)`——
+  改写本次工具调用的参数后放行（原「字符串=拦截、NULL=放行」语义不变）；改写链
+  按序组合，后续钩子与工具收到的是改写后的参数；trace 记
+  `args_rewritten` （含钩子名链），改写全程可追溯。
+- **子代理委派（`delegate_task`）**：主 Agent
+  可把自包含子任务（批量验证、独立 调研等跑腿活）委派给一个全新的
+  Chat——上下文隔离（子代理看不到主对话）、工具集
+  同主体但排除委派工具自身（深度锁 1
+  层防递归）、独立硬预算（`subagent_max_steps` 默认 8，父级天然消耗 1
+  步）、trace 带 `agent` 标记区分主/子。已知边界：委派
+  同步执行，期间面板不流式回显子过程。
+- **技能库（skills）**：约定目录
+  `R_user_dir("daiRH","data")/skills/`，放 `<name>.md` 或
+  `<name>/SKILL.md` 即成为 Agent 可用的技能；`read_skill` 工具
+  按需渐进加载（空参列清单、给名读全文，64KB
+  上限），不占常驻上下文。技能库非空
+  时系统提示词自动提示模型使用；[`dairh_skills_dir()`](https://gisersqdai.top/daiRH/reference/dairh_skills_dir.md)
+  /
+  [`dairh_read_skill()`](https://gisersqdai.top/daiRH/reference/dairh_read_skill.md)
+  供自检。
+- **show_html（交互 HTML 进 Viewer）**：项目内 HTML（leaflet/mapview
+  交互地图、 htmlwidgets 输出）经 RStudio 能力桥在 Viewer
+  打开，未连桥时退系统浏览器； html 需先保存到项目目录内（≤ 20MB）。
+- **存储目录可配置**：config.json 新增 `history_dir` / `trace_dir`（留空
+  = 各自 默认的用户数据 / cache
+  目录）；设置弹窗高级区同步新增两个路径框。改动历史目录
+  后旧会话不丢，只是抽屉指向新目录。
+- **杂项**：[`dairh_agent_tools()`](https://gisersqdai.top/daiRH/reference/dairh_agent_tools.md)
+  新增 `exclude` 参数（子代理构建工具集时排除
+  `delegate_task`）；新增测试 20+
+  条（钩子改写/技能库/子代理/新配置字段/show_plot
+  直返/show_html），本地基线 FAIL 0 \| WARN 0 \| PASS 254。
+
 ## daiRH 0.4.0
 
 - **会话持久化（多会话历史抽屉）**：后台面板接入 shinychat 0.5
@@ -29,7 +74,8 @@
   起一直 失效的行号 bug（`$rE` 恒为 NULL →
   `range$start$row`），并支持**未保存的
   无标题文档**（内容与选区直接读内存）；设置里的背景图新增”从电脑选图”
-  文件选择器（副本存入 daiRH 数据目录以持久化，≤ 8MB）。
+  文件选择器（副本存入 daiRH 数据目录以持久化，≤ 8MB）；面板标题右侧展示
+  包 Logo（data URI 内嵌，无外链）。
 - **选区讲解可靠性重构**：实测 RStudio 空闲时敲空回车不会触发主会话
   later
   回调，快照式上下文可能滞留旧内容（模型会正确拒绝并提示，但用户无解）。

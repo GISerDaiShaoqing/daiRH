@@ -11,7 +11,11 @@ allow_run 控制 run_r_code；返回 ellmer tool 对象列表（未注册到会�
 ## Usage
 
 ``` r
-dairh_agent_tools(cfg = dairh_config_get(), state = .dairh_new_state(cfg))
+dairh_agent_tools(
+  cfg = dairh_config_get(),
+  state = .dairh_new_state(cfg),
+  exclude = character(0)
+)
 ```
 
 ## Arguments
@@ -26,6 +30,11 @@ dairh_agent_tools(cfg = dairh_config_get(), state = .dairh_new_state(cfg))
   harness 会话状态（一般由
   [`dairh_new_agent()`](https://gisersqdai.top/daiRH/reference/dairh_new_agent.md)
   创建并持有； 直接调用本函数时自动新建）
+
+- exclude:
+
+  从最终工具集里排除的工具名（子代理构建时用它 排除 delegate_task
+  自身，防递归；一般用不到）
 
 ## Value
 

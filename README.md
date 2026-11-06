@@ -53,7 +53,9 @@ devtools::install("path/to/daiRH")
 Agent 会：`list_files` 看项目 → `create_file` 写脚本 → `run_r_code` 子进程跑 →
 报错时读 `stdout/error` 自我修正 → 输出结论。`edit_file` 是**唯一匹配的精确替换**，
 失败会自动重读原文修正；成功后在聊天里渲染变更片段（- 删除 / + 新增）并跳转到文件。
-画完图让 Agent 调 `show_plot`：PNG/JPG 直接渲染进聊天气泡，不用去项目里翻文件。
+画完图让 Agent 调 `show_plot`：图片直接作为工具结果进入对话——聊天里内联渲染、
+随会话历史重放，支持视觉的模型还能看图继续分析；leaflet 等交互地图用 `show_html`
+在 RStudio Viewer 打开。
 
 ### 控制台 CLI（claude-code 风格）
 
@@ -100,9 +102,13 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 | `system_prompt_extra` | 追加到系统提示的个性化要求 |
 | `bg_image` | 面板背景图（本地路径或 http(s) URL；留空 = 内置夜樱） |
 | `trace` | 是否记录工具调用轨迹（`dairh_trace()` 查看；默认开） |
+| `trace_dir` | 工具轨迹目录（留空 = 默认 cache 目录；0.5 起可配） |
 | `tools_profile` | 工具脚本路径（启动时 source，注册自定义工具/钩子；后台模式必经通道） |
 | `history` | 会话历史抽屉（仅后台面板）：多会话切换、重开面板自动续接最近会话（默认开） |
+| `history_dir` | 会话历史存储目录（留空 = 默认用户数据目录；0.5 起可配） |
 | `history_title` | LLM 给会话自动起标题（看前两轮对话，多一次调用；默认开） |
+| `allow_subagent` | 是否注册 `delegate_task` 子代理委派工具（默认开；深度锁 1 层） |
+| `subagent_max_steps` | 子代理单轮硬步数（默认 8） |
 
 > 网页版白嫖路线：本地起任意 "web → OpenAI 兼容" 网关，设置里 provider 选
 > `OpenAI 兼容`、`base_url` 指过去即可，插件零改动。
@@ -123,7 +129,7 @@ Go 计划的 API key（网页登录 cookie 不是 key）。
 
 ```
 面板 UI ──► Agent 会话（dairh_new_agent）
-             ├─ ① 工具注册表：内置 8 工具 + dairh_register_tool() 注册的自定义工具
+             ├─ ① 工具注册表：内置 12 工具 + dairh_register_tool() 注册的自定义工具
              ├─ ② 工具包装器：pre/post 钩子 → 硬步数预算 → 执行 → trace 留痕
              └─ ③ tools_profile 脚本：面板启动时自动 source（跨进程注册通道）
 ```
@@ -141,9 +147,10 @@ dairh_register_tool(
 )
 ```
 
-### 钩子（拦截与改写）
+### 钩子（拦截、改写参数与改写结果）
 
-- `pre_tool`：`function(name, args)`，返回字符串即拦截本次调用（如禁止碰 `.Renviron`）
+- `pre_tool`：`function(name, args)`，返回字符串即拦截本次调用（如禁止碰 `.Renviron`）；
+  返回 `dairh_rewrite_args(new_args)` 则**改写参数**后放行（改写动作记入 trace）
 - `post_tool`：`function(name, args, result)`，返回字符串即替换工具结果（如脱敏）
 
 ```r
@@ -151,7 +158,27 @@ dairh_add_hook("pre_tool", function(name, args) {
   if (name %in% c("read_file", "edit_file") &&
       grepl("Renviron|\\.env$", args$path %||% "")) "敏感文件禁止读写"
 })
+# 参数改写：统一收紧 run_r_code 的超时
+dairh_add_hook("pre_tool", function(name, args) {
+  if (identical(name, "run_r_code")) {
+    dairh_rewrite_args(list(code = args$code, timeout_sec = 120))
+  }
+})
 ```
+
+### 子代理委派（delegate_task）
+
+独立子任务不用占用主对话：主 Agent 调 `delegate_task(task)`，一个全新的 Chat 带着同样的
+工具集去跑（上下文隔离，子代理看不到主对话；深度锁 1 层防递归；独立硬预算
+`subagent_max_steps`）。适合"跑一遍测试汇总失败项""独立调研某个包的用法"这类跑腿活。
+委派是同步的，期间面板不流式回显子过程。
+
+### 技能库（skills）
+
+把领域规程、代码模板、团队约定写进 `tools::R_user_dir("daiRH", "data")/skills/`：
+每个 `<name>.md`（或 `<name>/SKILL.md` 目录形态）就是一个技能。Agent 用 `read_skill`
+按需加载——空参列清单、给名读全文（≤ 64KB），不占常驻上下文；技能库非空时系统
+提示词会自动提示模型先查技能库。`daiRH::dairh_read_skill()` 控制台自检清单。
 
 ### 硬步数预算
 

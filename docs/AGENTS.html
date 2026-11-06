@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,11 +73,15 @@
 </tr><tr><td><code>R/client.R</code></td>
 <td>provider→ellmer 客户端、模型列表、opencode 会话头</td>
 </tr><tr><td><code>R/harness.R</code></td>
-<td>注册表、钩子、硬预算、trace 写入（harness 核心）</td>
+<td>注册表、钩子（拦截/参数改写）、硬预算、trace 写入（harness 核心）</td>
 </tr><tr><td><code>R/tools_agent.R</code></td>
-<td>9 个内置工具（含 <code>.dai_path_guard</code> 路径限制闸）</td>
+<td>内置工具（含 <code>.dai_path_guard</code> 路径限制闸；名单与 harness.R 的 <code>.dairh_builtin_tools()</code> 保持同步）</td>
 </tr><tr><td><code>R/agent.R</code></td>
 <td>系统提示词、<code><a href="reference/dairh_new_agent.html">dairh_new_agent()</a></code> 组装</td>
+</tr><tr><td><code>R/subagent.R</code></td>
+<td>子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算）</td>
+</tr><tr><td><code>R/skills.R</code></td>
+<td>技能库（约定目录 + read_skill 工具的渐进加载）</td>
 </tr><tr><td><code>R/context.R</code></td>
 <td>RStudio 编辑器上下文/主会话桥</td>
 </tr><tr><td><code>R/background.R</code></td>
@@ -96,17 +100,18 @@
 <div class="section level2">
 <h2 id="常用流程">常用流程<a class="anchor" aria-label="anchor" href="#%E5%B8%B8%E7%94%A8%E6%B5%81%E7%A8%8B"></a></h2>
 <div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#    已安装旧版——0.4 曾因此假红）。本地基线：FAIL 0 | WARN 1 | PASS 178</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"testthat::test_local('&lt;包目录&gt;')"</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co"># 2) 装进系统库（Windows 例）</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co"># 3) 手改了 roxygen 注释之后</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co"># 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 254</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"testthat::test_local('&lt;包目录&gt;')"</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co"># 2) 装进系统库（Windows 例）</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co"># 3) 手改了 roxygen 注释之后</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co"># 4) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="依赖升级适配清单每次-ellmershinychatshiny-大版本升级照这个走">依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）<a class="anchor" aria-label="anchor" href="#%E4%BE%9D%E8%B5%96%E5%8D%87%E7%BA%A7%E9%80%82%E9%85%8D%E6%B8%85%E5%8D%95%E6%AF%8F%E6%AC%A1-ellmershinychatshiny-%E5%A4%A7%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E7%85%A7%E8%BF%99%E4%B8%AA%E8%B5%B0"></a></h2>
@@ -116,7 +121,9 @@
 <li>
 <strong>无头复现面板</strong>：<code>shiny::runApp(list(ui=app$ui, server=app$server),    port=&lt;port&gt;, launch.browser=FALSE)</code> 起本地口，用浏览器自动化截图 + 量 DOM 几何（<code>getBoundingClientRect</code>）定位布局问题；360–900px 宽度 全走一遍再算适配完。</li>
 <li>新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免 “UI 一套状态、Agent 另一套”的错位。</li>
-</ol></div>
+</ol><p><strong>shinychat 避坑（实测）</strong>：其客户端 markdown 管道允许 <code>&lt;img&gt;</code> 标签通过但会 剥掉 <code>data:</code> 协议的 src（imgCount=1、naturalWidth=0）——greeting/markdown 文本里内嵌图不可行。聊天插图走原生 contents 图片通道（show_plot 即此）； 静态 Logo 放面板自家标记（<code>.dai_title_logo()</code>，data URI 复用 <code>.dai_image_data_uri()</code> 并缓存）。</p>
+<p><strong>安装树坑（实测）</strong>：R 装包时不会把 <code>man/</code> 拷进安装树——<code>system.file("man","figures","logo.png")</code> 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：<code>man/figures/</code>（源码位置，load_all 可见）+ <code>inst/figures/</code>（硬拷贝，安装树一定在），查找函数两条路径都试。</p>
+</div>
 <div class="section level2">
 <h2 id="发布清单">发布清单<a class="anchor" aria-label="anchor" href="#%E5%8F%91%E5%B8%83%E6%B8%85%E5%8D%95"></a></h2>
 <ol style="list-style-type: decimal"><li>改名包：<code>DESCRIPTION</code> Version → NEWS.md 顶部加段 → 测试全绿 → roxygenise + fix_rd.R → pkgdown 重建。</li>

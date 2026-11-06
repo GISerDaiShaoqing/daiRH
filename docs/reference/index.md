@@ -46,7 +46,8 @@
 
 ## harness：自定义工具与钩子
 
-把项目特有的能力教给 Agent；pre/post 钩子拦截或改写每次工具调用。
+把项目特有的能力教给 Agent；pre/post
+钩子拦截、改写参数或改写每次工具调用。
 
 - [`dairh_register_tool()`](https://gisersqdai.top/daiRH/reference/dairh_register_tool.md)
   : 注册自定义工具（扩展 Agent 能力）
@@ -58,6 +59,17 @@
   : 添加 Agent 钩子（工具调用拦截/改写）
 - [`dairh_remove_hook()`](https://gisersqdai.top/daiRH/reference/dairh_remove_hook.md)
   : 移除钩子
+- [`dairh_rewrite_args()`](https://gisersqdai.top/daiRH/reference/dairh_rewrite_args.md)
+  : 构造 pre_tool 钩子的参数改写返回值
+
+## 技能库（skills）
+
+把领域规程、代码模板放进约定目录，Agent 经 read_skill 工具按需渐进加载。
+
+- [`dairh_skills_dir()`](https://gisersqdai.top/daiRH/reference/dairh_skills_dir.md)
+  : 技能库目录
+- [`dairh_read_skill()`](https://gisersqdai.top/daiRH/reference/dairh_read_skill.md)
+  : 查看技能库清单
 
 ## 调用轨迹（trace）
 

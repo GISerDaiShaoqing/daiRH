@@ -67,13 +67,20 @@ reference:
     - dairh_editor_context_text
   - title: harness：自定义工具与钩子
     desc: >
-      把项目特有的能力教给 Agent；pre/post 钩子拦截或改写每次工具调用。
+      把项目特有的能力教给 Agent；pre/post 钩子拦截、改写参数或改写每次工具调用。
     contents:
     - dairh_register_tool
     - dairh_unregister_tool
     - dairh_list_tools
     - dairh_add_hook
     - dairh_remove_hook
+    - dairh_rewrite_args
+  - title: 技能库（skills）
+    desc: >
+      把领域规程、代码模板放进约定目录，Agent 经 read_skill 工具按需渐进加载。
+    contents:
+    - dairh_skills_dir
+    - dairh_read_skill
   - title: 调用轨迹（trace）
     desc: >
       每次工具调用的参数、耗时、结果摘要与拦截原因，jsonl 落盘可回放。
