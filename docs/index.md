@@ -238,8 +238,9 @@ dairh_add_hook("pre_tool", ..., name = "guard-env")
 
 ### 路线图
 
-- 子代理委派（大任务拆给专职小 Agent）
-- 钩子参数改写（当前支持拦截，暂不支持改参数）
+- 会话上下文压缩（长会话一键压缩历史，减轻上下文负担）
+- 小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型）
+- 子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）
 
 ## 安全模型
 
@@ -251,7 +252,6 @@ dairh_add_hook("pre_tool", ..., name = "guard-env")
 
 ## 已知边界
 
-- Agent 步数由提示约束 + 用户观察控制，未做硬熔断
 - 模型能力（工具调用质量）取决于所接的模型本身
 - gadget 打开期间 R 控制台显示忙碌属正常（Shiny gadget 模式）
 - **编辑器上下文是快照式**（后台模式）：随 RStudio
@@ -268,7 +268,7 @@ testthat::test_dir("path/to/daiRH/tests/testthat", package = "daiRH")
 
 代码结构见 `R/`：`config.R`（配置/预设）、`client.R`（provider
 与模型列表）、 `harness.R`（工具注册表/钩子/硬预算/trace，harness
-核心）、`tools_agent.R`（9 个内置工具）、
+核心）、`tools_agent.R`（12 个内置工具）、
 `agent.R`（系统提示/会话组装）、`context.R`（RStudio 上下文）、
 `app_shiny.R`（面板与设置）、`background.R`（后台模式与面板进程管理）、
 `cli.R`（控制台 CLI）、`addin.R`（Addin 入口，注册于

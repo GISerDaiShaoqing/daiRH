@@ -311,8 +311,9 @@
 <h3 id="路线图">路线图<a class="anchor" aria-label="anchor" href="#%E8%B7%AF%E7%BA%BF%E5%9B%BE"></a>
 </h3>
 <ul>
-<li>子代理委派（大任务拆给专职小 Agent）</li>
-<li>钩子参数改写（当前支持拦截，暂不支持改参数）</li>
+<li>会话上下文压缩（长会话一键压缩历史，减轻上下文负担）</li>
+<li>小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型）</li>
+<li>子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）</li>
 </ul>
 </div>
 </div>
@@ -330,7 +331,6 @@
 <h2 id="已知边界">已知边界<a class="anchor" aria-label="anchor" href="#%E5%B7%B2%E7%9F%A5%E8%BE%B9%E7%95%8C"></a>
 </h2>
 <ul>
-<li>Agent 步数由提示约束 + 用户观察控制，未做硬熔断</li>
 <li>模型能力（工具调用质量）取决于所接的模型本身</li>
 <li>gadget 打开期间 R 控制台显示忙碌属正常（Shiny gadget 模式）</li>
 <li>
@@ -344,7 +344,7 @@
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">load_all</a></span><span class="op">(</span><span class="st">"path/to/daiRH"</span><span class="op">)</span></span>
 <span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_dir.html" class="external-link">test_dir</a></span><span class="op">(</span><span class="st">"path/to/daiRH/tests/testthat"</span>, package <span class="op">=</span> <span class="st">"daiRH"</span><span class="op">)</span></span></code></pre></div>
-<p>代码结构见 <code>R/</code>：<code>config.R</code>（配置/预设）、<code>client.R</code>（provider 与模型列表）、 <code>harness.R</code>（工具注册表/钩子/硬预算/trace，harness 核心）、<code>tools_agent.R</code>（9 个内置工具）、 <code>agent.R</code>（系统提示/会话组装）、<code>context.R</code>（RStudio 上下文）、 <code>app_shiny.R</code>（面板与设置）、<code>background.R</code>（后台模式与面板进程管理）、 <code>cli.R</code>（控制台 CLI）、<code>addin.R</code>（Addin 入口，注册于 <code>inst/rstudio/addins.dcf</code>）。 维护约定与常用命令见 <a href="AGENTS.html"><code>AGENTS.md</code></a>。</p>
+<p>代码结构见 <code>R/</code>：<code>config.R</code>（配置/预设）、<code>client.R</code>（provider 与模型列表）、 <code>harness.R</code>（工具注册表/钩子/硬预算/trace，harness 核心）、<code>tools_agent.R</code>（12 个内置工具）、 <code>agent.R</code>（系统提示/会话组装）、<code>context.R</code>（RStudio 上下文）、 <code>app_shiny.R</code>（面板与设置）、<code>background.R</code>（后台模式与面板进程管理）、 <code>cli.R</code>（控制台 CLI）、<code>addin.R</code>（Addin 入口，注册于 <code>inst/rstudio/addins.dcf</code>）。 维护约定与常用命令见 <a href="AGENTS.html"><code>AGENTS.md</code></a>。</p>
 </div>
 <div class="section level2">
 <h2 id="作者">作者<a class="anchor" aria-label="anchor" href="#%E4%BD%9C%E8%80%85"></a>
