@@ -140,6 +140,13 @@
   .dai-head .action-link, .dai-head .btn-link { color: #9c9dd6 !important; }
   .dai-head .action-link:hover .fa-gear { transform: rotate(40deg); color: #6366f1; }
   .dai-head .fa-gear { transition: transform .2s ease; }
+  /* 0.7 \u6A21\u5F0F\u70ED\u5207\u6362\u6309\u94AE\uFF08\u6784\u5EFA/\u8BA1\u5212\uFF09\uFF1A\u7D27\u51D1\u5706\u89D2\uFF0C\u968F\u72B6\u6001\u6362\u56FE\u6807\u6362\u5B57 */
+  .dai-head .dai-mode-btn {
+    font-size: 12px; padding: 1px 10px; line-height: 18px;
+    border-radius: 999px; border: 1px solid #dcdcfa;
+    background: #eef0ff; color: #5556c9;
+  }
+  .dai-head .dai-mode-btn:hover { border-color: #6366f1; color: #6366f1; }
   .dai-quick {
     display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 4px;
     margin: 0 2px 10px 2px; padding: 2px 2px 4px;
@@ -397,6 +404,14 @@ dairh_panel_ui <- function(cfg = NULL) {
         shiny::span(class = "dai-title", .dai_mascot_svg(), "DaiRH \u52A9\u624B", .dai_title_logo()),
         shiny::uiOutput("client_info", inline = TRUE),
         shinyjs::hidden(shiny::div(style = "flex:1", class = "flex-spacer")),
+        # 0.7 \u6A21\u5F0F\u70ED\u5207\u6362\uFF08plan/build\uFF09\uFF1Alabel \u968F\u72B6\u6001\u53D8\uFF1B\u70B9\u51FB\u7ECF .dairh_set_mode \u539F\u5730\u6362
+        # \u63D0\u793A\u8BCD\u4E0E\u5DE5\u5177\u96C6\uFF0C\u5BF9\u8BDD\u4E0E\u786C\u9884\u7B97\u8BA1\u6570\u4E0D\u4E22\u3002
+        shiny::actionButton("btn_mode",
+          label = if (identical(.dairh_norm_mode(cfg$mode %||% "build"), "plan")) "\u8BA1\u5212" else "\u6784\u5EFA",
+          icon = shiny::icon(if (identical(.dairh_norm_mode(cfg$mode %||% "build"), "plan")) "clipboard-list" else "hammer"),
+          class = "dai-mode-btn",
+          title = "\u6A21\u5F0F\u70ED\u5207\u6362\uFF08\u5F53\u573A\u751F\u6548\uFF0C\u5BF9\u8BDD\u4E0D\u4E22\uFF09\uFF1A\u8BA1\u5212 = \u53EA\u8BFB\u8C03\u7814\u3001\u4EA4\u4ED8\u7ED3\u6784\u5316\u8BA1\u5212\uFF1B\u6784\u5EFA = \u5168\u5DE5\u5177"
+        ),
         shiny::actionLink("btn_clear", "", shiny::icon("eraser"),
           title = "\u6E05\u7A7A\u5BF9\u8BDD\uFF08\u65B0\u4F1A\u8BDD\uFF1A\u6E05\u804A\u8BB0\u4E0E\u786C\u9884\u7B97\u91CD\u7F6E\uFF0C\u4E0D\u91CD\u542F\u5B50\u8FDB\u7A0B\uFF09"),
         shiny::actionLink("btn_settings", "", shiny::icon("gear"), title = "\u8BBE\u7F6E")
@@ -420,8 +435,15 @@ dairh_panel_ui <- function(cfg = NULL) {
       # \u4E24\u8005\u90FD\u585E\u4E00\u4FA7\u90FD\u6324\u2014\u2014\u5934\u90E8\u653E\u8EAB\u4EFD\u3001\u5E95\u90E8\u653E\u8BA1\u91CF\uFF0C0.6 \u5B9E\u6D4B\u5B9A\u7A3F\uFF09\u3002
       shiny::div(
         class = "dai-foot",
+        # 0.7 \u5E95\u90E8\u72B6\u6001\u680F\uFF1A\u5DE5\u4F5C\u65F6\u957F\uFF08\u5DE5\u4F5C\u4E2D\u6D3B\u8DF3/\u672C\u8F6E\u51BB\u7ED3\uFF09+ token \u8BA1\u91CF + \u601D\u8003\u5F3A\u5EA6 + \u538B\u7F29
+        shiny::uiOutput("work_info", inline = TRUE),
         shiny::uiOutput("token_info", inline = TRUE),
         shinyjs::hidden(shiny::div(style = "flex:1", class = "flex-spacer")),
+        shiny::actionLink("btn_effort",
+          paste0("\u601D\u8003:", if (!nzchar(.dairh_norm_effort(cfg$reasoning_effort %||% ""))) "\u5173" else
+            c(low = "\u4F4E", medium = "\u4E2D", high = "\u9AD8")[[.dairh_norm_effort(cfg$reasoning_effort %||% "")]]),
+          shiny::icon("brain"),
+          title = "\u601D\u8003\u5F3A\u5EA6 reasoning_effort\uFF08\u900F\u4F20\u7ED9\u7F51\u5173\uFF0C\u5FAA\u73AF \u5173\u2192\u4F4E\u2192\u4E2D\u2192\u9AD8\uFF09\uFF1B\u5199\u5165\u914D\u7F6E\uFF0C\u91CD\u5F00\u9762\u677F\u540E\u751F\u6548"),
         shiny::actionLink("btn_compact", "\u538B\u7F29\u4E0A\u4E0B\u6587", shiny::icon("compress"),
           title = "\u538B\u7F29\u4E0A\u4E0B\u6587\uFF08\u6A21\u578B\u603B\u7ED3\u5F53\u524D\u5BF9\u8BDD\u5E76\u91CD\u6C34\u5408\uFF1B\u539F\u5BF9\u8BDD\u5B58\u5165\u5386\u53F2\u62BD\u5C49\uFF09")
       )
@@ -444,6 +466,13 @@ dairh_panel_ui <- function(cfg = NULL) {
     )
 
     n_tools <- tryCatch(length(dairh_agent_tools(cfg)), error = function(e) NA_integer_)
+    # 0.7\uFF1A\u8BA1\u5212\u6A21\u5F0F\u7684\u5DE5\u5177\u6570\u3002rv_mode \u63D0\u524D\u5230 client_info \u4E4B\u524D\u5B9A\u4E49\u2014\u2014\u6807\u9898\u680F pill
+    # \u968F\u6A21\u5F0F\u5B9E\u65F6\u53D8\u5316\uFF08\u5DE5\u5177\u6570 plan=\u88C1\u526A\u540E\uFF0Cbuild=\u5168\u91CF\uFF09\uFF0C\u6D88\u8D39 rv_mode \u5EFA\u7ACB\u8BA2\u9605\u3002
+    cfg_plan <- cfg
+    cfg_plan$mode <- "plan"
+    n_tools_plan <- tryCatch(length(dairh_agent_tools(cfg_plan)),
+      error = function(e) NA_integer_)
+    rv_mode <- shiny::reactiveVal(.dairh_norm_mode(cfg$mode %||% "build"))
     output$client_info <- shiny::renderText({
       if (!is.null(init_err)) {
         sprintf(
@@ -451,7 +480,9 @@ dairh_panel_ui <- function(cfg = NULL) {
           htmltools::htmlEscape(.dai_clip(init_err, 100))
         )
       } else {
-        tools_txt <- if (is.na(n_tools)) "" else sprintf(" \u00B7 %d \u5DE5\u5177", n_tools)
+        m <- rv_mode()
+        n_eff <- if (identical(m, "plan") && !is.na(n_tools_plan)) n_tools_plan else n_tools
+        tools_txt <- if (is.na(n_eff)) "" else sprintf(" \u00B7 %d \u5DE5\u5177", n_eff)
         sprintf("<span class='dai-sub'>%s \u00B7 %s%s</span>", cfg$provider, cfg$model, tools_txt)
       }
     })
@@ -498,7 +529,24 @@ dairh_panel_ui <- function(cfg = NULL) {
           )
         }
       }
-      paste0(seg_cum, " ", seg_ctx)
+      # 0.7 tok/s\uFF1A\u8BFB\u6F0F\u6597 rate env\uFF1B\u4EC5\u5F53\u8BB0\u5F55\u7684 turn \u4E0E\u5F53\u524D last_turn \u662F\u540C\u4E00\u5BF9\u8C61\u624D
+      # \u663E\u793A\u2014\u2014\u8D77\u6807\u9898\u8D70 client$clone()\uFF08\u56DE\u8C03\u6309\u5F15\u7528\u5171\u4EAB\uFF09\uFF0C\u7528\u5BF9\u8C61\u4E00\u81F4\u6027\u8FC7\u6EE4\uFF0C
+      # \u6807\u9898\u8BF7\u6C42\u4E0D\u6C61\u67D3\u4E3B\u5BF9\u8BDD\u901F\u5EA6\u663E\u793A\uFF1B\u4E0D\u5339\u914D\u65F6\u6BB5\u7701\u7565\uFF0C\u4E0B\u4E00\u8F6E\u56DE\u590D\u81EA\u52A8\u6062\u590D\u3002
+      seg_speed <- ""
+      renv <- attr(client, ".dairh_rate")
+      if (!is.null(renv) && !is.null(lt)) {
+        last <- renv$last
+        if (!is.null(last) && identical(last$turn, lt)) {
+          r <- suppressWarnings(as.numeric(last$tok_per_s %||% NA)[[1]])
+          if (length(r) == 1L && is.finite(r) && r > 0) {
+            seg_speed <- sprintf(
+              "<span class='dai-tok' title='\u6700\u8FD1\u4E00\u6B21\u6A21\u578B\u8BF7\u6C42\u7684\u8F93\u51FA\u901F\u5EA6\uFF08\u8F93\u51FA token/\u79D2\uFF09'>\u00B7 %s tok/s</span>",
+              format(r, nsmall = 0)
+            )
+          }
+        }
+      }
+      paste0(seg_cum, " ", seg_ctx, " ", seg_speed)
     })
 
     chat_mod <- NULL
@@ -594,7 +642,101 @@ dairh_panel_ui <- function(cfg = NULL) {
     })
     .dairh_chat_send <- function(prompt) chat_send$trigger <- prompt
 
-    # \u6E05\u7A7A\u5BF9\u8BDD\uFF1A\u5F39\u7A97\u786E\u8BA4\u540E\u4EA4\u7ED9\u4E0A\u65B9\u6267\u884C\u5668
+    # ---- 0.7 \u6A21\u5F0F\u70ED\u5207\u6362\uFF08plan/build\uFF09+ \u601D\u8003\u5F3A\u5EA6 + \u5DE5\u4F5C\u65F6\u957F --------------------
+    # \u6A21\u5F0F\uFF1Arv_mode \u5DF2\u5728 client_info \u524D\u5B9A\u4E49\uFF08\u9762\u677F\u4F1A\u8BDD\u5185\u7684\u8FD0\u884C\u65F6\u72B6\u6001\uFF0C
+    # \u70ED\u5207\u6362\u4E0D\u5199\u914D\u7F6E\u6587\u4EF6\u2014\u2014\u65B0\u4F1A\u8BDD\u9ED8\u8BA4\u503C\u5F52\u8BBE\u7F6E\u9875\u7BA1\uFF09\uFF0C\u8FD9\u91CC\u53EA\u6302\u89C2\u5BDF\u5668\u3002
+    .dai_mode_view <- function(m) {
+      if (identical(m, "plan")) {
+        list(label = "\u8BA1\u5212", icon = "clipboard-list")
+      } else {
+        list(label = "\u6784\u5EFA", icon = "hammer")
+      }
+    }
+    shiny::observeEvent(rv_mode(), {
+      v <- .dai_mode_view(rv_mode())
+      shiny::updateActionButton(session, "btn_mode",
+        label = v$label, icon = shiny::icon(v$icon))
+    })
+    shiny::observeEvent(input$btn_mode, {
+      if (is.null(client)) {
+        shiny::showNotification("\u9762\u677F\u521D\u59CB\u5316\u5931\u8D25\uFF0C\u6CA1\u6709\u53EF\u5207\u6362\u6A21\u5F0F\u7684\u4F1A\u8BDD\u3002", type = "error")
+        return()
+      }
+      new_mode <- if (identical(rv_mode(), "plan")) "build" else "plan"
+      ok <- tryCatch({
+        .dairh_set_mode(client, new_mode, cfg)
+        TRUE
+      }, error = function(e) {
+        shiny::showNotification(paste0("\u6A21\u5F0F\u5207\u6362\u5931\u8D25\uFF1A", conditionMessage(e)), type = "error")
+        FALSE
+      })
+      if (isTRUE(ok)) {
+        rv_mode(new_mode)
+        shiny::showNotification(
+          if (identical(new_mode, "plan"))
+            "\u5DF2\u5207\u6362\u5230\u8BA1\u5212\u6A21\u5F0F\uFF1A\u53EA\u8BFB\u8C03\u7814\uFF0C\u4EA4\u4ED8\u7ED3\u6784\u5316\u8BA1\u5212\uFF08\u5199/\u6267\u884C\u7C7B\u5DE5\u5177\u5DF2\u7269\u7406\u88C1\u526A\uFF09\u3002"
+          else
+            "\u5DF2\u5207\u6362\u5230\u6784\u5EFA\u6A21\u5F0F\uFF1A\u5168\u5DE5\u5177\u6062\u590D\u3002",
+          type = "message", duration = 4
+        )
+      }
+    })
+
+    # \u601D\u8003\u5F3A\u5EA6\u5FAA\u73AF\u6309\u94AE\uFF1A\u5199\u914D\u7F6E\u6301\u4E45\u5316\uFF1Bellmer 0.5 \u7684 Chat \u65E0 params \u70ED\u6539\u53E3
+    # \uFF08\u81EA\u7701\u786E\u8BA4\uFF1A\u65E0 set_params \u4E5F\u65E0 params \u6D3B\u52A8\u7ED1\u5B9A\uFF09\uFF0C\u8BED\u4E49\u4E3A"\u91CD\u5F00\u9762\u677F\u751F\u6548"\u3002
+    .dai_effort_seq <- c("", "low", "medium", "high")
+    .dai_effort_zh <- function(e) switch(e, low = "\u4F4E", medium = "\u4E2D", high = "\u9AD8", "\u5173")
+    rv_effort <- shiny::reactiveVal(.dairh_norm_effort(cfg$reasoning_effort %||% ""))
+    shiny::observeEvent(rv_effort(), {
+      shiny::updateActionButton(session, "btn_effort",
+        label = paste0("\u601D\u8003:", .dai_effort_zh(rv_effort())))
+    })
+    shiny::observeEvent(input$btn_effort, {
+      idx <- which(.dai_effort_seq == rv_effort())
+      if (!length(idx)) idx <- 1L
+      nxt <- .dai_effort_seq[[idx %% length(.dai_effort_seq) + 1L]]
+      rv_effort(nxt)
+      tryCatch(dairh_config_set(reasoning_effort = nxt), error = function(e) NULL)
+      shiny::showNotification(
+        paste0("\u601D\u8003\u5F3A\u5EA6\uFF1A", .dai_effort_zh(nxt),
+          if (!nzchar(nxt)) "\uFF08\u4E0D\u53D1\u9001\u8BE5\u5B57\u6BB5\uFF09" else "\uFF08\u5DF2\u5199\u5165\u914D\u7F6E\uFF1B\u91CD\u5F00\u9762\u677F\u540E\u751F\u6548\uFF09"),
+        type = "message", duration = 4
+      )
+    })
+
+    # \u5DE5\u4F5C\u65F6\u957F\uFF1Ashinychat \u7684 status \u5728 streaming\uFF08\u8986\u76D6\u6574\u4E2A\u5DE5\u5177\u5FAA\u73AF\uFF09/ idle \u95F4\u7FFB\u8F6C\u3002
+    # observe \u8D1F\u8D23\u8BB0\u8D26\uFF08\u8BB0\u8D77\u70B9 / \u51BB\u7ED3\u4E0A\u8F6E\u8017\u65F6\uFF09\uFF1BrenderText \u4EC5 streaming \u65F6\u8BA2\u9605
+    # 1s timer \u6D3B\u8DF3\uFF0Cidle \u663E\u793A\u4E0A\u8F6E"\u00B7 \u672C\u8F6E m\u5206s\u79D2"\uFF08\u4E0D\u8BA2\u9605 timer\uFF0C\u4E0D\u7A7A\u8F6C\uFF09\u3002
+    work <- shiny::reactiveValues(start = NULL, last_secs = NA_real_)
+    work_timer <- shiny::reactiveTimer(1000, session)
+    shiny::observe({
+      st <- tryCatch(chat_mod$status(), error = function(e) NULL)
+      if (is.null(st)) return()
+      if (identical(st, "streaming")) {
+        if (is.null(work$start)) work$start <- Sys.time()
+      } else if (!is.null(work$start)) {
+        work$last_secs <- as.numeric(difftime(Sys.time(), work$start, units = "secs"))
+        work$start <- NULL
+      }
+    })
+    output$work_info <- shiny::renderText({
+      if (is.null(chat_mod)) return("")
+      st <- tryCatch(chat_mod$status(), error = function(e) NULL)
+      if (identical(st, "streaming")) {
+        work_timer()
+        secs <- as.numeric(difftime(Sys.time(), work$start %||% Sys.time(), units = "secs"))
+        sprintf("<span class='dai-tok' title='\u672C\u8F6E\u4EFB\u52A1\u5DF2\u8FDB\u884C\u65F6\u95F4'>&#9201; \u5DE5\u4F5C\u4E2D %s</span>",
+          .dai_fmt_dur(secs))
+      } else {
+        ls <- work$last_secs
+        if (length(ls) == 1L && is.finite(ls) && ls >= 1) {
+          sprintf("<span class='dai-tok' title='\u4E0A\u4E00\u8F6E\u4EFB\u52A1\u603B\u8017\u65F6'>\u00B7 \u672C\u8F6E %s</span>",
+            .dai_fmt_dur(ls))
+        } else ""
+      }
+    })
+
+    # \u6E05\u7A7A\u5BF9\u8BDD\uFF08\u65B0\u4F1A\u8BDD\uFF09\u6309\u94AE\uFF1A\u5F39\u7A97\u786E\u8BA4\u540E\u4EA4\u7ED9\u4E0A\u65B9\u6267\u884C\u5668
     shiny::observeEvent(input$btn_clear, {
       clear_txt <- if (!is.null(chat_mod))
         "\u5C06\u5F00\u542F\u65B0\u4F1A\u8BDD\u5E76\u91CD\u7F6E Agent \u72B6\u6001\uFF08\u542B\u5355\u8F6E\u786C\u9884\u7B97\u8BA1\u6570\uFF09\uFF1B\u5F53\u524D\u4F1A\u8BDD\u5B58\u5165\u5386\u53F2\u62BD\u5C49\uFF0C\u53EF\u968F\u65F6\u627E\u56DE\u3002"
@@ -619,6 +761,9 @@ dairh_panel_ui <- function(cfg = NULL) {
         return()
       }
       clear_rv$reset <- clear_rv$reset + 1L
+      # \u65B0\u4F1A\u8BDD\uFF1A\u5DE5\u4F5C\u65F6\u957F\u4ECE\u96F6\u8BA1
+      work$start <- NULL
+      work$last_secs <- NA_real_
     })
 
     # \u538B\u7F29\u4E0A\u4E0B\u6587\uFF080.6\uFF09\uFF1A\u786E\u8BA4\u5F39\u7A97 \u2192 \u6458\u8981\uFF08\u4E3B\u6A21\u578B\u4E00\u6B21\u6027\u65E0\u5DE5\u5177 Chat\uFF1B\u5FC5\u987B\u53D1\u751F\u5728
@@ -771,12 +916,20 @@ dairh_app <- function(cfg = dairh_config_get()) {
         choices = .dairh_runmode_choices(),
         selected = .dairh_norm_run_mode(cfg$run_mode %||% "bg"), inline = TRUE
       ),
+      shiny::selectInput("dai_mode", "\u9ED8\u8BA4\u4F1A\u8BDD\u6A21\u5F0F\uFF08\u65B0\u4F1A\u8BDD\u751F\u6548\uFF1B\u9762\u677F\u5934\u90E8\u6309\u94AE\u53EF\u70ED\u5207\uFF09",
+        choices = c("\u6784\u5EFA\uFF08\u5168\u5DE5\u5177\uFF09" = "build", "\u8BA1\u5212\uFF08\u53EA\u8BFB\u8C03\u7814\uFF0C\u4EA4\u4ED8\u8BA1\u5212\uFF09" = "plan"),
+        selected = .dairh_norm_mode(cfg$mode %||% "build")
+      ),
       shiny::fluidRow(
         shiny::column(4, shiny::numericInput("dai_temp", "temperature",
           value = round(cfg$temperature %||% 0.7, 2), min = 0, max = 2, step = 0.1
         )),
         shiny::column(4, shiny::numericInput("dai_max_steps", "Agent \u6700\u5927\u5DE5\u5177\u6B65\u6570",
           value = cfg$max_steps %||% 12, min = 3, max = 60, step = 1
+        )),
+        shiny::column(4, shiny::selectInput("dai_effort", "\u601D\u8003\u5F3A\u5EA6",
+          choices = c("\u5173\uFF08\u4E0D\u53D1\u9001\uFF09" = "", "\u4F4E" = "low", "\u4E2D" = "medium", "\u9AD8" = "high"),
+          selected = .dairh_norm_effort(cfg$reasoning_effort %||% "")
         ))
       ),
       shiny::checkboxInput("dai_allow_edit",
@@ -837,6 +990,10 @@ dairh_app <- function(cfg = dairh_config_get()) {
       shiny::numericInput("dai_subagent_steps",
         "\u5B50\u4EE3\u7406\u5355\u8F6E\u786C\u6B65\u6570\uFF08subagent_max_steps\uFF09",
         value = cfg$subagent_max_steps %||% 8, min = 1, max = 60, step = 1
+      ),
+      shiny::textInput("dai_delegate_model",
+        "\u5B50\u4EE3\u7406\u6A21\u578B\uFF08delegate_model\uFF1B\u7559\u7A7A = \u4E3B\u6A21\u578B\uFF0C\u91CD\u5F00\u9762\u677F\u751F\u6548\uFF09",
+        value = cfg$delegate_model %||% ""
       )
     )
   )
@@ -953,8 +1110,10 @@ dairh_settings_observers <- function(input, output, session, cfg, standalone = F
       api_key = input$dai_key %||% "",
       api_key_env = input$dai_key_env %||% "",
       temperature = input$dai_temp,
+      reasoning_effort = .dairh_norm_effort(input$dai_effort %||% ""),
       max_steps = input$dai_max_steps,
       run_mode = .dairh_norm_run_mode(input$dai_run_mode),
+      mode = .dairh_norm_mode(input$dai_mode %||% "build"),
       allow_edit = isTRUE(input$dai_allow_edit),
       allow_run = isTRUE(input$dai_allow_run),
       restrict_paths = isTRUE(input$dai_restrict),
@@ -1004,7 +1163,8 @@ dairh_settings_observers <- function(input, output, session, cfg, standalone = F
       subagent_max_steps = {
         s <- suppressWarnings(as.integer(input$dai_subagent_steps %||% 8L))
         if (length(s) != 1L || is.na(s) || s < 1L) 8L else s
-      }
+      },
+      delegate_model = trimws(input$dai_delegate_model %||% "")
     )
     if (standalone) {
       shiny::stopApp()

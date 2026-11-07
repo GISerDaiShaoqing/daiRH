@@ -99,3 +99,40 @@ test_that("0.6 context_window config field (numeric coerce, blank = NA)", {
   dairh_config_set(context_window = "")
   expect_true(is.na(dairh_config_get()$context_window))
 })
+
+# 0.7: session mode / delegate model / reasoning effort
+test_that("0.7 config fields: defaults, coercion and normalization", {
+  cfg <- dairh_config_default()
+  expect_identical(cfg$mode, "build")
+  expect_identical(cfg$delegate_model, "")
+  expect_identical(cfg$reasoning_effort, "")
+
+  tpl <- dairh_config_default()
+  expect_identical(.dai_cfg_coerce("mode", "PLAN", tpl), "plan")
+  expect_identical(.dai_cfg_coerce("mode", "junk", tpl), "build")
+  expect_identical(.dai_cfg_coerce("mode", character(0), tpl), "build")
+  expect_identical(.dai_cfg_coerce("mode", " plan ", tpl), "plan")
+  expect_identical(.dai_cfg_coerce("reasoning_effort", "HIGH", tpl), "high")
+  expect_identical(.dai_cfg_coerce("reasoning_effort", "minimal", tpl), "minimal")
+  expect_identical(.dai_cfg_coerce("reasoning_effort", "nope", tpl), "")
+  expect_identical(.dai_cfg_coerce("reasoning_effort", character(0), tpl), "")
+  # delegate_model is a free-form string (trimmed at the use site)
+  expect_identical(.dai_cfg_coerce("delegate_model", " tiny-model ", tpl), " tiny-model ")
+})
+
+test_that("0.7 mode persists through config roundtrip", {
+  tmp <- file.path(tempdir(), paste0("daiRH-test-mode-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  dir.create(tmp, recursive = TRUE)
+  p <- file.path(tmp, "config.json")
+  options(daiRH.config_path = p)
+  on.exit(options(daiRH.config_path = NULL), add = TRUE)
+
+  dairh_config_set(mode = "plan", reasoning_effort = "medium",
+    delegate_model = "tiny-model")
+  got <- dairh_config_get()
+  expect_identical(got$mode, "plan")
+  expect_identical(got$reasoning_effort, "medium")
+  expect_identical(got$delegate_model, "tiny-model")
+  expect_true(.dairh_is_plan_mode(got))
+})

@@ -100,8 +100,15 @@ dairh_config_default <- function() {
     api_key = "",
     api_key_env = "DAI_API_KEY",
     temperature = 0.7,
+    # \u601D\u8003\u5F3A\u5EA6\uFF08\u63A8\u7406\u529B\u5EA6\uFF09\uFF1A\u900F\u4F20\u7ED9\u7F51\u5173\u2014\u2014openai_compatible \u8D70 api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53
+    # \uFF08compatible provider \u7684 params \u767D\u540D\u5355\u4E0D\u8BA4\u6B64\u5B57\u6BB5\uFF09\uFF0Collama \u8D70 params() \u539F\u751F
+    # \u652F\u6301\uFF1B0.7 \u7F51\u5173\u63A2\u9488\u5B9E\u6D4B\u63A5\u53D7\u3002"" = \u4E0D\u53D1\u9001\u8BE5\u5B57\u6BB5\u3002\u53EF\u53D6 minimal/low/medium/high\u3002
+    reasoning_effort = "",
     max_steps = 12,
     run_mode = "bg",
+    # \u4F1A\u8BDD\u6A21\u5F0F\uFF1Aplan\uFF08\u8BA1\u5212\uFF09= \u53EA\u8BFB\u8C03\u7814\u5DE5\u5177\u9762\uFF1Bbuild\uFF08\u6784\u5EFA\uFF09= \u5168\u5DE5\u5177\u3002\u9762\u677F\u5934\u90E8\u6309\u94AE\u70ED\u5207\u6362\uFF0C
+    # \u8FD9\u91CC\u662F\u65B0\u4F1A\u8BDD\u7684\u9ED8\u8BA4\u503C\u3002
+    mode = "build",
     allow_edit = TRUE,
     allow_run = TRUE,
     restrict_paths = TRUE,
@@ -114,7 +121,9 @@ dairh_config_default <- function() {
     history_dir = "",
     history_title = TRUE,
     allow_subagent = TRUE,
-    subagent_max_steps = 8
+    subagent_max_steps = 8,
+    # \u5B50\u4EE3\u7406\u7528\u6A21\u578B\uFF1A\u7559\u7A7A = \u6CBF\u7528\u4E3B\u6A21\u578B\uFF1B\u586B\u8F7B\u91CF\u6A21\u578B\u53EF\u7701\u989D\u5EA6\uFF08usage \u65E5\u5FD7 model \u5B57\u6BB5\u81EA\u52A8\u8DDF\u968F\uFF09\u3002
+    delegate_model = ""
   )
 }
 
@@ -131,6 +140,8 @@ dairh_config_default <- function() {
   # provider / run_mode \u6536\u655B\u5230\u89C4\u8303\u503C\uFF08\u5386\u53F2\u914D\u7F6E\u53EF\u80FD\u5B58\u8FC7\u663E\u793A\u6587\u6848\uFF0C\u5982 "Ollama"\u3001"\u540E\u53F0\u8FD0\u884C\uFF08\u2026\uFF09"\uFF09
   if (identical(key, "provider")) out <- .dairh_norm_provider(out)
   if (identical(key, "run_mode")) out <- .dairh_norm_run_mode(out)
+  if (identical(key, "mode")) out <- .dairh_norm_mode(out)
+  if (identical(key, "reasoning_effort")) out <- .dairh_norm_effort(out)
   out
 }
 
@@ -150,6 +161,25 @@ dairh_config_default <- function() {
   m <- tolower(trimws(as.character(m %||% "bg")[[1]]))
   if (identical(m, "gadget") || identical(m, "bg")) return(m)
   "bg"
+}
+
+# \u4F1A\u8BDD\u6A21\u5F0F\u5F52\u4E00\u5316\uFF1A\u53EA\u8BA4 plan/build\uFF1B\u4E71\u503C\u56DE\u843D build\uFF08\u5199\u5165\u7AEF\u7531\u4E0B\u62C9/\u6309\u94AE\u6309\u89C4\u8303\u503C\u63D0\u4EA4\uFF09
+.dairh_norm_mode <- function(m) {
+  v <- as.character(m %||% "build")
+  m <- if (length(v)) tolower(trimws(v[[1]])) else "build"
+  if (!length(m) || is.na(m)) m <- "build"
+  if (identical(m, "plan") || identical(m, "build")) return(m)
+  "build"
+}
+
+# \u601D\u8003\u5F3A\u5EA6\u5F52\u4E00\u5316\uFF1A\u53EA\u8BA4 minimal/low/medium/high\uFF1B\u7A7A/\u4E71\u503C = \u4E0D\u53D1\u9001\u8BE5\u5B57\u6BB5
+.dairh_norm_effort <- function(e) {
+  v <- as.character(e %||% "")
+  e <- if (length(v)) tolower(trimws(v[[1]])) else ""
+  if (!length(e) || is.na(e)) e <- ""
+  if (identical(e, "minimal") || identical(e, "low") ||
+      identical(e, "medium") || identical(e, "high")) return(e)
+  ""
 }
 
 #' \u8BFB\u53D6 DaiRH \u914D\u7F6E

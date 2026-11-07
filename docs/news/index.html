@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,21 @@
       <small>Source: <a href="https://github.com/GISerDaiShaoqing/daiRH/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.7.0" id="dairh-070">daiRH 0.7.0<a class="anchor" aria-label="anchor" href="#dairh-070"></a></h2>
+<ul><li>
+<strong>plan/build 模式（头部按钮热切换）</strong>：面板标题栏新增模式按钮（构建 ⇄ 计划， 当场生效、对话与硬预算计数不丢）。计划模式 = 只读调研：运行时从最终工具集 <strong>物理裁掉</strong> <code>create_file</code>/<code>edit_file</code>/<code>run_r_code</code>/<code>show_plot</code>/<code>show_html</code> （非提示词劝告），系统提示词换成”调研 + 交付结构化计划”口径； <code>delegate_task</code> 保留且子代理继承同一模式（天然只读），独立调研不受影响。 控制台 <code>/plan</code> <code>/build</code> 同一实现；config 新增 <code>mode</code> 字段管新会话默认值 （设置页可选）。核心实现：复用同一 state env 重建工具集 + <code>set_system_prompt()</code>/<code>set_tools()</code> 原地换（ellmer Chat 为 R6，shinychat 起标题与历史重放即用此二机制），trace 记 <code>mode</code> 事件可审计。</li>
+<li>
+<strong>子代理模型 delegate_model</strong>：config 新增 <code>delegate_model</code>——子代理委派 可指定轻量模型（留空沿用主模型），usage 日志 <code>model</code> 字段自动跟随对账； 设置页高级区可填，重开面板生效。</li>
+<li>
+<strong>tok/s 速度显示 + 请求时长落盘</strong>：漏斗升级为 ellmer <code>on_request_start</code>/ <code>on_request_end</code> 回调对——<code>usage.jsonl</code> 每行新增 <code>duration_s</code> 与 <code>tok_per_s</code>（外部用量监测可算吞吐）；面板状态栏新增「· N tok/s」段， 按 turn 对象一致性过滤（起标题的 clone 请求不污染主对话速度显示）。</li>
+<li>
+<strong>工作时长</strong>：状态栏新增计时——streaming 期间每秒活跳「⏱ 工作中 m分s秒」（shinychat <code>status</code> 两态括弧，覆盖整个工具循环），结束冻结为 「· 本轮 m分s秒」；开新会话从零计。</li>
+<li>
+<strong>思考强度 reasoning_effort</strong>：config 新增 <code>reasoning_effort</code> （minimal/low/medium/high，空 = 不发送）。双通道透传：openai_compatible 走 <code>api_args</code> 直进请求体顶层——compatible provider 的 params 白名单不认 <code>reasoning_effort</code>（请求时警告 Ignoring unsupported parameters 并丢弃， 面板 stderr 实测后改道），ollama 走 <code>params()</code> 原生支持；网关探针实测 接受。面板状态栏「思考:关/低/中/高」循环按钮（写配置持久化）+ 设置页 下拉；ellmer Chat 无 params 热改口，重开面板生效（与模型选择器同语义）。</li>
+<li>
+<strong>杂项</strong>：新增 <code>R/mode.R</code>，无新增导出函数、无新增依赖；测试基线 PASS 404。</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.6.0" id="dairh-060">daiRH 0.6.0<a class="anchor" aria-label="anchor" href="#dairh-060"></a></h2>
 <ul><li>

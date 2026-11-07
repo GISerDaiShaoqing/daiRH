@@ -496,6 +496,8 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
   restrict <- isTRUE(cfg$restrict_paths)
   allow_edit <- isTRUE(cfg$allow_edit)
   allow_run <- isTRUE(cfg$allow_run)
+  # \u8BA1\u5212\u6A21\u5F0F\uFF1A\u6700\u7EC8\u5DE5\u5177\u96C6\u7269\u7406\u88C1\u6389\u5199\u6587\u4EF6/\u6267\u884C/\u4EA4\u4ED8\u7C7B\uFF08\u89C1 .dairh_plan_dropped_tools\uFF09
+  plan <- .dairh_is_plan_mode(cfg)
   tools <- list()
 
   tools$read_file <- ellmer::tool(
@@ -705,6 +707,9 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
     )
     if (!is.null(t)) final[[nm]] <- t
   }
+
+  # \u8BA1\u5212\u6A21\u5F0F\uFF1A\u4ECE\u6700\u7EC8\u5DE5\u5177\u96C6\u7269\u7406\u88C1\u6389\u5199\u6587\u4EF6/\u6267\u884C/\u4EA4\u4ED8\u7C7B\uFF08\u975E\u63D0\u793A\u8BCD\u529D\u544A\uFF1B\u81EA\u5B9A\u4E49\u5DE5\u5177\u4E0D\u88C1\uFF09
+  if (plan) final <- final[setdiff(names(final), .dairh_plan_dropped_tools)]
 
   # \u6DF1\u5EA6\u9501\uFF1A\u5B50\u4EE3\u7406\u6784\u5EFA\u5DE5\u5177\u96C6\u65F6\u6392\u9664 delegate_task\uFF08cfg$allow_subagent \u518D\u5173\u4E00\u5C42\u95F8\uFF09
   if (length(exclude)) final <- final[setdiff(names(final), exclude)]

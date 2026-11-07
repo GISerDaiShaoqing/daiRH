@@ -38,11 +38,14 @@ devtools::install("path/to/daiRH")
    一键直发面板讲解（Tools → Modify Keyboard Shortcuts 搜 daiRH 绑定）。
    面板里的"讲解选中代码"按钮走快照式上下文，快照只在控制台**运行真实代码**
    时刷新（空回车不保证触发）
-4. 面板标题栏只留两个图标：**🧹 清空对话**（= 开新会话：重置 Agent 会话与
+4. 面板标题栏从左到右：**模式按钮**（构建 ⇄ 计划，当场热切换，见下文）、
+   **🧹 清空对话**（= 开新会话：重置 Agent 会话与
    单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时
    找回）和 **⚙ 设置**（provider·模型·工具数就显示在标题栏）；
-   **输入框下方的状态栏**实时显示本会话累计 token（输入/输出）与上下文
-   容量，右侧是 **压缩上下文** 按钮（长会话一键压缩，见下文）；
+   **输入框下方的状态栏**显示**工作时长**（干活时每秒活跳「工作中」，结束冻结
+   为「本轮用时」）、本会话累计 token（输入/输出）、上下文容量与最近一次
+   请求的 **tok/s**；右侧是 **思考强度** 循环按钮（关/低/中/高，透传给网关的
+   `reasoning_effort`）与 **压缩上下文** 按钮（长会话一键压缩，见下文）；
    聊天区左上角 **🕘 历史抽屉**（后台模式）：多会话列表/搜索/切换，
    重开面板自动续接最近一次会话；四个快捷按钮：
    - **解释当前文件** / **讲解选中代码** / **审查当前文件** / **R 文档问答**
@@ -70,7 +73,8 @@ daiRH::dairh_cli()
 
 ASCII 大字启动横幅（带动画）→ `daiRH ❯` 提示符循环：任务直接敲，模型流式输出、
 工具调用过程实时回显，每轮结束报"工具调用 N 步 / 预算"。
-`/help` 看命令，`/clear` 开新会话，`/compact` 压缩上下文，`/tools` 列工具，`/exit` 退出。
+`/help` 看命令，`/clear` 开新会话，`/plan` `/build` 切换计划/构建模式（当场生效），
+`/compact` 压缩上下文，`/tools` 列工具，`/exit` 退出。
 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。
 
 ### 关闭助手（运行模式说明）
@@ -96,7 +100,10 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 |---|---|
 | `provider` | `ollama`（走 `chat_ollama`）或 `openai_compatible`（DeepSeek/GLM/Kimi/任意兼容网关） |
 | `base_url` | 如 `http://localhost:11434`（本机 Ollama）、`https://api.deepseek.com` |
-| `model` | 模型名；设置里可"列出模型"自动发现（网关不支持时回退预设内置清单） || `context_window` | 模型上下文窗口（tokens，标题栏"上下文容量"的分母；留空 = 未知，只显示占用） |
+| `model` | 模型名；设置里可"列出模型"自动发现（网关不支持时回退预设内置清单） |
+| `context_window` | 模型上下文窗口（tokens，状态栏"上下文容量"的分母；留空 = 未知，只显示占用） |
+| `reasoning_effort` | 思考强度（0.7）：`minimal/low/medium/high` 透传给网关，空 = 不发送；状态栏「思考:」按钮可循环切换 |
+| `mode` | 新会话默认模式（0.7）：`build`（全工具）或 `plan`（只读调研）；面板头部按钮可热切 |
 | `api_key` / `api_key_env` | key 直填，或写环境变量名（如 `DAI_API_KEY`）；Ollama 可留空 |
 | `temperature` | 采样温度 |
 | `run_mode` | `bg`（默认，后台运行，不占控制台）或 `gadget`（经典模式，控制台同步占用） |
@@ -113,6 +120,7 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 | `history_title` | LLM 给会话自动起标题（看前两轮对话，多一次调用；默认开） |
 | `allow_subagent` | 是否注册 `delegate_task` 子代理委派工具（默认开；深度锁 1 层） |
 | `subagent_max_steps` | 子代理单轮硬步数（默认 8） |
+| `delegate_model` | 子代理用模型（0.7）：留空 = 主模型；填轻量模型省额度（usage 日志 model 字段自动跟随） |
 
 > 网页版白嫖路线：本地起任意 "web → OpenAI 兼容" 网关，设置里 provider 选
 > `OpenAI 兼容`、`base_url` 指过去即可，插件零改动。
@@ -176,7 +184,20 @@ dairh_add_hook("pre_tool", function(name, args) {
 独立子任务不用占用主对话：主 Agent 调 `delegate_task(task)`，一个全新的 Chat 带着同样的
 工具集去跑（上下文隔离，子代理看不到主对话；深度锁 1 层防递归；独立硬预算
 `subagent_max_steps`）。适合"跑一遍测试汇总失败项""独立调研某个包的用法"这类跑腿活。
-委派是同步的，期间面板不流式回显子过程。
+委派是同步的，期间面板不流式回显子过程。`delegate_model` 可让子代理走轻量模型
+（留空 = 主模型；usage 日志的 model 字段自动跟随，省了多少对账即知）。
+
+### 计划/构建模式（热切换）
+
+标题栏的模式按钮（CLI 用 `/plan` `/build`）**当场切换，对话与硬预算计数都不丢**：
+
+- **构建（build，默认）**：全工具，主口径。
+- **计划（plan）**：只读调研——`create_file` / `edit_file` / `run_r_code` /
+  `show_plot` / `show_html` 在运行时**物理裁剪**（不是提示词劝告），系统提示词
+  换成"调研 + 交付结构化计划（发现 / 方案 / 涉及文件 / 步骤 / 待确认）"口径；
+  `delegate_task` 保留且子代理继承同一模式（天然只读），独立调研照常。
+
+`mode` 配置项管新会话默认值（设置页可选）；面板内热切换不写配置文件。
 
 ### 技能库（skills）
 
@@ -234,14 +255,16 @@ dairh_add_hook("pre_tool", ..., name = "guard-env")
 
 每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会
 追加一行 jsonl 到 `tools::R_user_dir("daiRH", "data")/usage/usage.jsonl`
-（`source/model/ok/input/output/cache_read[/cost]`，与按次计费网关的
-对账口径一致）；环境变量 `DAIRH_USAGE_LOG=0` 整体关闭。请求出错不记
-（错误请求网关也不计费）。
+（`source/model/ok/input/output/cache_read[/cost/duration_s/tok_per_s]`，
+与按次计费网关的对账口径一致；0.7 起附带请求时长与输出速度）；环境变量
+`DAIRH_USAGE_LOG=0` 整体关闭。请求出错不记（错误请求网关也不计费）。
 
 ### 路线图
 
-- 小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型）
-- 子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）
+- 小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型；0.7 的
+  `delegate_model` 已覆盖子代理委派这一路）
+- 子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）；
+  思考强度的会话内热切换（等 ellmer 提供 params 热改口）
 
 ## 安全模型
 
@@ -266,7 +289,7 @@ testthat::test_dir("path/to/daiRH/tests/testthat", package = "daiRH")
 
 代码结构见 `R/`：`config.R`（配置/预设）、`client.R`（provider 与模型列表）、
 `harness.R`（工具注册表/钩子/硬预算/trace，harness 核心）、`tools_agent.R`（12 个内置工具）、
-`agent.R`（系统提示/会话组装）、`context.R`（RStudio 上下文）、
+`agent.R`（系统提示/会话组装）、`mode.R`（计划/构建模式与热切换）、`context.R`（RStudio 上下文）、
 `app_shiny.R`（面板与设置）、`background.R`（后台模式与面板进程管理）、
 `cli.R`（控制台 CLI）、`addin.R`（Addin 入口，注册于 `inst/rstudio/addins.dcf`）。
 维护约定与常用命令见 [`AGENTS.md`](AGENTS.md)。

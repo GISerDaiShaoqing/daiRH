@@ -7,8 +7,12 @@
 # \u5BF9\u4E25\u683C\u6821\u9A8C Authorization \u7684\u7F51\u5173\uFF08OpenCode Go\uFF09\u5FC5\u73B0 401 Invalid credential\u3002
 # \u6B63\u786E\u5F62\u6001\uFF1Acredentials = function() <\u88F8 key>\uFF0Cellmer \u81EA\u5DF1\u8865 Bearer\u3002
 .dai_make_openai_compatible <- function(base_url, name, system_prompt, key,
-                                        model, params, headers = NULL) {
-  if (is.null(headers)) headers <- character(0) # ellmer \u4E0D\u63A5\u53D7 NULL
+                                        model, params, headers = NULL,
+                                        api_args = NULL) {
+  if (is.null(headers)) headers <- character(0) # \u4E0D\u63A5\u53D7 NULL
+  # api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53\u9876\u5C42\uFF080.7 \u601D\u8003\u5F3A\u5EA6\u8D70\u8FD9\u91CC\uFF1Acompatible provider \u7684
+  # params \u767D\u540D\u5355\u4E0D\u8BA4 reasoning_effort\uFF0C\u8BF7\u6C42\u65F6\u8B66\u544A Ignoring unsupported
+  # parameters \u5E76\u4E22\u5F03\u2014\u20140.7 \u9762\u677F stderr \u5B9E\u6D4B\uFF09\u3002
   ellmer::chat_openai_compatible(
     base_url = base_url,
     name = name,
@@ -16,6 +20,7 @@
     credentials = if (nzchar(key)) function() key else NULL,
     model = model,
     params = params,
+    api_args = api_args %||% list(),
     api_headers = headers,
     echo = "none"
   )
@@ -47,7 +52,20 @@
 #' @export
 dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
   base_url <- .dai_strip_url(cfg$base_url %||% "")
-  params <- ellmer::params(temperature = round(as.numeric(cfg$temperature %||% 0.7), 3))
+  # 0.7 \u601D\u8003\u5F3A\u5EA6\uFF1Areasoning_effort \u900F\u4F20\uFF0C\u4E24\u6761\u901A\u9053\u4E0D\u540C\u2014\u2014
+  #   ollama\uFF1Aellmer \u539F\u751F\u652F\u6301 params(reasoning_effort=)\uFF08NEWS #940\uFF09\uFF1B
+  #   openai_compatible\uFF1Aprovider \u7684 params \u767D\u540D\u5355\u4E0D\u8BA4\u5B83\uFF08\u8BF7\u6C42\u65F6\u8B66\u544A
+  #   "Ignoring unsupported parameters" \u5E76\u4E22\u5F03\uFF0C0.7 \u9762\u677F stderr \u5B9E\u6D4B\uFF09\uFF0C\u6539\u8D70
+  #   api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53\u9876\u5C42\uFF080.7 \u7F51\u5173\u63A2\u9488\u5B9E\u6D4B 200 \u63A5\u53D7\uFF09\u3002"" = \u4E0D\u53D1\u9001\u3002
+  effort <- .dairh_norm_effort(cfg$reasoning_effort %||% "")
+  temperature <- round(as.numeric(cfg$temperature %||% 0.7), 3)
+  params <- ellmer::params(temperature = temperature)
+  params_ollama <- if (nzchar(effort)) {
+    ellmer::params(temperature = temperature, reasoning_effort = effort)
+  } else {
+    params
+  }
+  api_args <- if (nzchar(effort)) list(reasoning_effort = effort) else list()
   provider <- .dairh_norm_provider(cfg$provider)
   model <- cfg$model %||% ""
   cl <- if (identical(provider, "ollama")) {
@@ -58,7 +76,7 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
         system_prompt = system_prompt,
         base_url = base_url,
         model = model,
-        params = params,
+        params = params_ollama,
         echo = "none"
       ),
       error = function(e) {
@@ -69,7 +87,8 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
           key = "not-needed",
           model = model,
           params = params,
-          headers = .dai_session_headers(paste0(base_url, "/v1"))
+          headers = .dai_session_headers(paste0(base_url, "/v1")),
+          api_args = api_args
         )
       }
     )
@@ -81,7 +100,8 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
       key = dairh_api_key_value(cfg),
       model = model,
       params = params,
-      headers = .dai_session_headers(base_url)
+      headers = .dai_session_headers(base_url),
+      api_args = api_args
     )
   } else {
     stop("\u672A\u77E5\u7684 provider: ", cfg$provider, "\uFF08\u5E94\u4E3A ollama \u6216 openai_compatible\uFF09",

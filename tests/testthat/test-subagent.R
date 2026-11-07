@@ -79,3 +79,30 @@ test_that("main agent state keeps tag main and trace carries agent field", {
   j <- jsonlite::fromJSON(lines[length(lines)], simplifyVector = FALSE)
   expect_identical(j$agent, "main")
 })
+
+# 0.7: delegate_model override for the sub-agent client
+test_that("delegate_model overrides the sub-agent client model", {
+  local_sub_trace_dir()
+  captured <- new.env(parent = emptyenv())
+  fake_client <- function(cfg_, system_prompt = NULL, ...) {
+    captured$model <- cfg_$model
+    list(
+      register_tool = function(t) invisible(NULL),
+      chat = function(...) "OK: sub done"
+    )
+  }
+  testthat::local_mocked_bindings(dairh_client = fake_client)
+
+  cfg <- dairh_config_default()
+  cfg$delegate_model <- "  tiny-model  "
+  st <- .dairh_new_state(cfg)
+  res <- .dairh_delegate_task("do x", cfg = cfg, state = st)
+  expect_identical(captured$model, "tiny-model")
+  expect_match(res, "OK", fixed = TRUE)
+
+  # empty delegate_model keeps the main model
+  cfg2 <- dairh_config_default()
+  st2 <- .dairh_new_state(cfg2)
+  invisible(.dairh_delegate_task("do y", cfg = cfg2, state = st2))
+  expect_identical(captured$model, cfg2$model)
+})

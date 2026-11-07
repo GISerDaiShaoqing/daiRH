@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.6.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,7 +95,7 @@
 <strong>Tools → Addins → DaiRH Settings</strong>：配置 provider / 模型 / Key</li>
 <li>
 <strong>（强烈建议绑快捷键）Tools → Addins → daiRH Send Selection</strong>：选中代码后 一键直发面板讲解（Tools → Modify Keyboard Shortcuts 搜 daiRH 绑定）。 面板里的”讲解选中代码”按钮走快照式上下文，快照只在控制台<strong>运行真实代码</strong> 时刷新（空回车不保证触发）</li>
-<li>面板标题栏只留两个图标：<strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与 单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时 找回）和 <strong>⚙ 设置</strong>（provider·模型·工具数就显示在标题栏）； <strong>输入框下方的状态栏</strong>实时显示本会话累计 token（输入/输出）与上下文 容量，右侧是 <strong>压缩上下文</strong> 按钮（长会话一键压缩，见下文）； 聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
+<li>面板标题栏从左到右：<strong>模式按钮</strong>（构建 ⇄ 计划，当场热切换，见下文）、 <strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与 单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时 找回）和 <strong>⚙ 设置</strong>（provider·模型·工具数就显示在标题栏）； <strong>输入框下方的状态栏</strong>显示<strong>工作时长</strong>（干活时每秒活跳「工作中」，结束冻结 为「本轮用时」）、本会话累计 token（输入/输出）、上下文容量与最近一次 请求的 <strong>tok/s</strong>；右侧是 <strong>思考强度</strong> 循环按钮（关/低/中/高，透传给网关的 <code>reasoning_effort</code>）与 <strong>压缩上下文</strong> 按钮（长会话一键压缩，见下文）； 聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
 <ul>
 <li>
 <strong>解释当前文件</strong> / <strong>讲解选中代码</strong> / <strong>审查当前文件</strong> / <strong>R 文档问答</strong>
@@ -115,7 +115,7 @@
 <p>不想开面板？控制台里直接跑：</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">daiRH</span><span class="fu">::</span><span class="fu"><a href="reference/dairh_cli.html">dairh_cli</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>ASCII 大字启动横幅（带动画）→ <code>daiRH ❯</code> 提示符循环：任务直接敲，模型流式输出、 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 <code>/help</code> 看命令，<code>/clear</code> 开新会话，<code>/compact</code> 压缩上下文，<code>/tools</code> 列工具，<code>/exit</code> 退出。 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。</p>
+<p>ASCII 大字启动横幅（带动画）→ <code>daiRH ❯</code> 提示符循环：任务直接敲，模型流式输出、 工具调用过程实时回显，每轮结束报”工具调用 N 步 / 预算”。 <code>/help</code> 看命令，<code>/clear</code> 开新会话，<code>/plan</code> <code>/build</code> 切换计划/构建模式（当场生效）， <code>/compact</code> 压缩上下文，<code>/tools</code> 列工具，<code>/exit</code> 退出。 运行期间控制台被占用（同 gadget 模式）；硬预算/钩子/trace 与面板完全同一套 harness。</p>
 </div>
 <div class="section level3">
 <h3 id="关闭助手运行模式说明">关闭助手（运行模式说明）<a class="anchor" aria-label="anchor" href="#%E5%85%B3%E9%97%AD%E5%8A%A9%E6%89%8B%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F%E8%AF%B4%E6%98%8E"></a>
@@ -157,6 +157,18 @@
 <tr>
 <td><code>model</code></td>
 <td>模型名；设置里可”列出模型”自动发现（网关不支持时回退预设内置清单）</td>
+</tr>
+<tr>
+<td><code>context_window</code></td>
+<td>模型上下文窗口（tokens，状态栏”上下文容量”的分母；留空 = 未知，只显示占用）</td>
+</tr>
+<tr>
+<td><code>reasoning_effort</code></td>
+<td>思考强度（0.7）：<code>minimal/low/medium/high</code> 透传给网关，空 = 不发送；状态栏「思考:」按钮可循环切换</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td>新会话默认模式（0.7）：<code>build</code>（全工具）或 <code>plan</code>（只读调研）；面板头部按钮可热切</td>
 </tr>
 <tr>
 <td>
@@ -227,6 +239,10 @@
 <td><code>subagent_max_steps</code></td>
 <td>子代理单轮硬步数（默认 8）</td>
 </tr>
+<tr>
+<td><code>delegate_model</code></td>
+<td>子代理用模型（0.7）：留空 = 主模型；填轻量模型省额度（usage 日志 model 字段自动跟随）</td>
+</tr>
 </tbody>
 </table>
 <blockquote>
@@ -278,7 +294,19 @@
 <div class="section level3">
 <h3 id="子代理委派delegate_task">子代理委派（delegate_task）<a class="anchor" aria-label="anchor" href="#%E5%AD%90%E4%BB%A3%E7%90%86%E5%A7%94%E6%B4%BEdelegate_task"></a>
 </h3>
-<p>独立子任务不用占用主对话：主 Agent 调 <code>delegate_task(task)</code>，一个全新的 Chat 带着同样的 工具集去跑（上下文隔离，子代理看不到主对话；深度锁 1 层防递归；独立硬预算 <code>subagent_max_steps</code>）。适合”跑一遍测试汇总失败项”“独立调研某个包的用法”这类跑腿活。 委派是同步的，期间面板不流式回显子过程。</p>
+<p>独立子任务不用占用主对话：主 Agent 调 <code>delegate_task(task)</code>，一个全新的 Chat 带着同样的 工具集去跑（上下文隔离，子代理看不到主对话；深度锁 1 层防递归；独立硬预算 <code>subagent_max_steps</code>）。适合”跑一遍测试汇总失败项”“独立调研某个包的用法”这类跑腿活。 委派是同步的，期间面板不流式回显子过程。<code>delegate_model</code> 可让子代理走轻量模型 （留空 = 主模型；usage 日志的 model 字段自动跟随，省了多少对账即知）。</p>
+</div>
+<div class="section level3">
+<h3 id="计划构建模式热切换">计划/构建模式（热切换）<a class="anchor" aria-label="anchor" href="#%E8%AE%A1%E5%88%92%E6%9E%84%E5%BB%BA%E6%A8%A1%E5%BC%8F%E7%83%AD%E5%88%87%E6%8D%A2"></a>
+</h3>
+<p>标题栏的模式按钮（CLI 用 <code>/plan</code> <code>/build</code>）<strong>当场切换，对话与硬预算计数都不丢</strong>：</p>
+<ul>
+<li>
+<strong>构建（build，默认）</strong>：全工具，主口径。</li>
+<li>
+<strong>计划（plan）</strong>：只读调研——<code>create_file</code> / <code>edit_file</code> / <code>run_r_code</code> / <code>show_plot</code> / <code>show_html</code> 在运行时<strong>物理裁剪</strong>（不是提示词劝告），系统提示词 换成”调研 + 交付结构化计划（发现 / 方案 / 涉及文件 / 步骤 / 待确认）“口径； <code>delegate_task</code> 保留且子代理继承同一模式（天然只读），独立调研照常。</li>
+</ul>
+<p><code>mode</code> 配置项管新会话默认值（设置页可选）；面板内热切换不写配置文件。</p>
 </div>
 <div class="section level3">
 <h3 id="技能库skills">技能库（skills）<a class="anchor" aria-label="anchor" href="#%E6%8A%80%E8%83%BD%E5%BA%93skills"></a>
@@ -317,14 +345,14 @@
 <h3 id="上下文压缩与-token-计量">上下文压缩与 token 计量<a class="anchor" aria-label="anchor" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8E%8B%E7%BC%A9%E4%B8%8E-token-%E8%AE%A1%E9%87%8F"></a>
 </h3>
 <p>长会话把上下文撑大后，点输入框右侧的<strong>压缩上下文</strong>（CLI 用 <code>/compact</code>）： 主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat， 1 次请求），模型上下文替换为摘要，单轮硬预算重置；原对话存入历史抽屉 可随时找回，聊天记录保留并附压缩横幅。标题栏同时显示<strong>累计 token（输入/ 输出）</strong>与<strong>上下文占用</strong>（最近一次请求的输入 token）；在设置里填上模型的 <code>context_window</code> 后，还会显示”上下文 45k / 1M (4.5%)“这样的容量百分比。</p>
-<p>每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会 追加一行 jsonl 到 <code>tools::R_user_dir("daiRH", "data")/usage/usage.jsonl</code> （<code>source/model/ok/input/output/cache_read[/cost]</code>，与按次计费网关的 对账口径一致）；环境变量 <code>DAIRH_USAGE_LOG=0</code> 整体关闭。请求出错不记 （错误请求网关也不计费）。</p>
+<p>每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会 追加一行 jsonl 到 <code>tools::R_user_dir("daiRH", "data")/usage/usage.jsonl</code> （<code>source/model/ok/input/output/cache_read[/cost/duration_s/tok_per_s]</code>， 与按次计费网关的对账口径一致；0.7 起附带请求时长与输出速度）；环境变量 <code>DAIRH_USAGE_LOG=0</code> 整体关闭。请求出错不记（错误请求网关也不计费）。</p>
 </div>
 <div class="section level3">
 <h3 id="路线图">路线图<a class="anchor" aria-label="anchor" href="#%E8%B7%AF%E7%BA%BF%E5%9B%BE"></a>
 </h3>
 <ul>
-<li>小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型）</li>
-<li>子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）</li>
+<li>小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型；0.7 的 <code>delegate_model</code> 已覆盖子代理委派这一路）</li>
+<li>子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）； 思考强度的会话内热切换（等 ellmer 提供 params 热改口）</li>
 </ul>
 </div>
 </div>
@@ -355,7 +383,7 @@
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">load_all</a></span><span class="op">(</span><span class="st">"path/to/daiRH"</span><span class="op">)</span></span>
 <span><span class="fu">testthat</span><span class="fu">::</span><span class="fu"><a href="https://testthat.r-lib.org/reference/test_dir.html" class="external-link">test_dir</a></span><span class="op">(</span><span class="st">"path/to/daiRH/tests/testthat"</span>, package <span class="op">=</span> <span class="st">"daiRH"</span><span class="op">)</span></span></code></pre></div>
-<p>代码结构见 <code>R/</code>：<code>config.R</code>（配置/预设）、<code>client.R</code>（provider 与模型列表）、 <code>harness.R</code>（工具注册表/钩子/硬预算/trace，harness 核心）、<code>tools_agent.R</code>（12 个内置工具）、 <code>agent.R</code>（系统提示/会话组装）、<code>context.R</code>（RStudio 上下文）、 <code>app_shiny.R</code>（面板与设置）、<code>background.R</code>（后台模式与面板进程管理）、 <code>cli.R</code>（控制台 CLI）、<code>addin.R</code>（Addin 入口，注册于 <code>inst/rstudio/addins.dcf</code>）。 维护约定与常用命令见 <a href="AGENTS.html"><code>AGENTS.md</code></a>。</p>
+<p>代码结构见 <code>R/</code>：<code>config.R</code>（配置/预设）、<code>client.R</code>（provider 与模型列表）、 <code>harness.R</code>（工具注册表/钩子/硬预算/trace，harness 核心）、<code>tools_agent.R</code>（12 个内置工具）、 <code>agent.R</code>（系统提示/会话组装）、<code>mode.R</code>（计划/构建模式与热切换）、<code>context.R</code>（RStudio 上下文）、 <code>app_shiny.R</code>（面板与设置）、<code>background.R</code>（后台模式与面板进程管理）、 <code>cli.R</code>（控制台 CLI）、<code>addin.R</code>（Addin 入口，注册于 <code>inst/rstudio/addins.dcf</code>）。 维护约定与常用命令见 <a href="AGENTS.html"><code>AGENTS.md</code></a>。</p>
 </div>
 <div class="section level2">
 <h2 id="作者">作者<a class="anchor" aria-label="anchor" href="#%E4%BD%9C%E8%80%85"></a>

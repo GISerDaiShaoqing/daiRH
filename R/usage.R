@@ -88,25 +88,67 @@
   else sprintf("%d", as.integer(round(n)))
 }
 
-# \u552F\u4E00\u6302\u70B9\uFF1Adairh_client() \u6784\u9020\u5B8C\u6210\u540E\u8C03\u7528\u3002\u56DE\u8C03\u5728\u6BCF\u4E2A\u8BF7\u6C42\u7ED3\u675F\u65F6\u6536\u5230\u521A\u8FD4\u56DE\u7684
-# assistant turn\uFF1B\u53D6\u6D88\u7684\u8BF7\u6C42\u662F AssistantPartialTurn\uFF08tokens \u4E3A NA\uFF09\u2014\u2014resolve \u540E
-# \u5168 0\uFF0C\u76F4\u63A5\u8DF3\u8FC7\uFF08\u4E0D\u8BA1\u8D39\u7684\u4E0D\u8BB0\uFF09\u3002
+# \u79D2\u6570 -> "49 \u5206 51.6 \u79D2" / "12.3 \u79D2"\uFF080.7 \u9762\u677F\u5DE5\u4F5C\u65F6\u957F\u7528\uFF09
+.dai_fmt_dur <- function(secs) {
+  secs <- suppressWarnings(as.numeric(secs))
+  if (length(secs) != 1L || is.na(secs) || !is.finite(secs) || secs < 0) return("0 \u79D2")
+  if (secs >= 3600) {
+    h <- floor(secs / 3600)
+    m <- floor((secs - h * 3600) / 60)
+    sprintf("%d \u5C0F\u65F6 %d \u5206 %.0f \u79D2", h, m, secs - h * 3600 - m * 60)
+  } else if (secs >= 60) {
+    m <- floor(secs / 60)
+    sprintf("%d \u5206 %.1f \u79D2", m, secs - m * 60)
+  } else {
+    sprintf("%.1f \u79D2", secs)
+  }
+}
+
+# \u552F\u4E00\u6302\u70B9\uFF1Adairh_client() \u6784\u9020\u5B8C\u6210\u540E\u8C03\u7528\u3002on_request_start \u8BB0\u8BF7\u6C42\u8D77\u70B9\uFF08\u542B\u5DE5\u5177\u5FAA\u73AF
+# \u6BCF\u4E00\u8DF3\uFF09\uFF0Con_request_end \u6536\u521A\u8FD4\u56DE\u7684 assistant turn\uFF1A\u7B97 duration_s \u4E0E tok_per_s
+# \uFF08\u8F93\u51FA token / \u8BF7\u6C42\u65F6\u957F\uFF09\u5199\u5165 jsonl\uFF0C\u5E76\u628A (turn, tok_per_s) \u5B58\u8FDB rate env
+# \uFF08attr(client,".dairh_rate")\uFF09\u4F9B\u9762\u677F\u72B6\u6001\u680F\u663E\u793A\u3002
+# \u53D6\u6D88\u7684\u8BF7\u6C42\u662F AssistantPartialTurn\uFF08tokens \u4E3A NA\uFF09\u2014\u2014resolve \u540E\u5168 0\uFF0C\u76F4\u63A5\u8DF3\u8FC7
+# \uFF08\u4E0D\u8BA1\u8D39\u7684\u4E0D\u8BB0\uFF0C\u901F\u5EA6\u4E5F\u4E0D\u5237\u65B0\uFF09\u3002\u5DF2\u77E5\u8FD1\u4F3C\uFF1A\u8D77\u6807\u9898\u8D70 client$clone()\uFF0C\u56DE\u8C03\u6309\u5F15\u7528
+# \u5171\u4EAB\uFF0C\u6807\u9898\u8BF7\u6C42\u4E5F\u4F1A\u8D70\u5230\u8FD9\u91CC\u2014\u2014\u9762\u677F\u4FA7\u6309 turn \u5BF9\u8C61\u4E00\u81F4\u6027\u8FC7\u6EE4\u663E\u793A\uFF0Cjsonl \u7167\u5B9E\u8BB0\u3002
 .dairh_usage_install <- function(client, model) {
   if (identical(Sys.getenv("DAIRH_USAGE_LOG"), "0")) return(client)
+  renv <- new.env(parent = emptyenv())
+  renv$t0 <- Sys.time() # start \u56DE\u8C03\u6CA1\u6302\u4E0A\u4E5F\u6709\u7684\u515C\u5E95\u8D77\u70B9
+  renv$last <- NULL
+  tryCatch(
+    client$on_request_start(function(turns) {
+      renv$t0 <- Sys.time()
+      invisible(NULL)
+    }),
+    error = function(e) NULL
+  )
   tryCatch(
     client$on_request_end(function(turn) {
+      dur <- as.numeric(difftime(Sys.time(), renv$t0, units = "secs"))
+      if (!is.finite(dur) || dur < 0) dur <- NA_real_
       tk <- tryCatch(turn@tokens, error = function(e) NULL)
       usage <- .dairh_usage_resolve(tk)
       if (is.null(usage)) return(invisible(FALSE))
       if (usage$input == 0 && usage$output == 0) return(invisible(FALSE))
+      # tok/s\uFF1A\u8FC7\u77ED\u8BF7\u6C42\uFF08<0.05s\uFF09\u4E0D\u53EF\u4FE1\uFF0C\u4E0D\u5199\u4E0D\u5B58
+      rate <- if (is.finite(dur) && dur >= 0.05 && usage$output > 0) {
+        round(usage$output / dur, 1)
+      } else NULL
+      renv$last <- list(turn = turn, tok_per_s = rate, duration_s = dur)
       # @cost\uFF1A\u6709\u5B9A\u4EF7\u8868\u7684\u7AEF\u70B9\u624D\u975E NA\uFF1B\u53D6\u4E0D\u5230\u5C31\u4E0D\u5199\u8BE5\u5B57\u6BB5
       cost <- tryCatch({
         cv <- suppressWarnings(as.numeric(turn@cost)[[1]])
         if (is.finite(cv) && cv > 0) cv else NULL
       }, error = function(e) NULL)
-      .dairh_usage_log(model, c(usage, list(cost = cost)), ok = TRUE)
+      .dairh_usage_log(model, c(usage, list(
+        cost = cost,
+        duration_s = if (is.finite(dur)) round(dur, 3) else NULL,
+        tok_per_s = rate
+      )), ok = TRUE)
     }),
     error = function(e) NULL
   )
+  attr(client, ".dairh_rate") <- renv
   client
 }

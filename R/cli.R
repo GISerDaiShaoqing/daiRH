@@ -85,12 +85,52 @@
       }
       "ok"
     },
+    "/plan" = , "/build" = {
+      # 0.7 \u6A21\u5F0F\u70ED\u5207\u6362\uFF1A\u4E0E\u9762\u677F\u5171\u7528 .dairh_set_mode\uFF08\u539F\u5730\u6362\u63D0\u793A\u8BCD+\u5DE5\u5177\u96C6\uFF0C\u5BF9\u8BDD\u4FDD\u7559\uFF09
+      if (is.null(agent)) {
+        cat("  \u4F1A\u8BDD\u4E0D\u53EF\u7528\uFF08\u521D\u59CB\u5316\u5931\u8D25\u6216\u5C1A\u672A\u542F\u52A8\uFF09\u3002\n")
+      } else {
+        mode <- if (identical(cmd, "/plan")) "plan" else "build"
+        ok <- tryCatch({
+          .dairh_set_mode(agent, mode, cfg)
+          TRUE
+        }, error = function(e) {
+          cat("  \u6A21\u5F0F\u5207\u6362\u5931\u8D25\uFF1A", conditionMessage(e), "\n")
+          FALSE
+        })
+        if (isTRUE(ok)) {
+          cat(if (identical(mode, "plan"))
+            "  \u5DF2\u5207\u6362\u5230\u8BA1\u5212\u6A21\u5F0F\uFF1A\u53EA\u8BFB\u8C03\u7814\uFF0C\u4EA4\u4ED8\u7ED3\u6784\u5316\u8BA1\u5212\uFF08\u5199/\u6267\u884C\u7C7B\u5DE5\u5177\u5DF2\u7269\u7406\u88C1\u526A\uFF09\u3002\n"
+          else
+            "  \u5DF2\u5207\u6362\u5230\u6784\u5EFA\u6A21\u5F0F\uFF1A\u5168\u5DE5\u5177\u6062\u590D\u3002\n")
+        }
+      }
+      "ok"
+    },
     "/tools" = {
       lt <- dairh_list_tools()
-      cat(sprintf("  %-18s %-10s %s\n", "name", "source", "description"))
+      # 0.7\uFF1A\u4F1A\u8BDD\u5728\u624B\u65F6\u6309\u5F53\u524D\u751F\u6548\u5DE5\u5177\u96C6\u6807\u6CE8\uFF08\u8BA1\u5212\u6A21\u5F0F\u7684\u7269\u7406\u88C1\u526A\u76F4\u89C2\u53EF\u89C1\uFF09
+      active <- if (!is.null(agent)) {
+        tryCatch(
+          vapply(agent$get_tools(), function(t) as.character(t@name)[[1]], character(1)),
+          error = function(e) NULL
+        )
+      } else NULL
+      has_state <- !is.null(active)
+      if (has_state) {
+        cat(sprintf("  %-18s %-10s %-6s %s\n", "name", "source", "state", "description"))
+      } else {
+        cat(sprintf("  %-18s %-10s %s\n", "name", "source", "description"))
+      }
       for (i in seq_len(nrow(lt))) {
-        cat(sprintf("  %-18s %-10s %s\n",
-          lt$name[[i]], lt$source[[i]], .dai_clip(lt$description[[i]] %||% "", 60)))
+        st <- if (!has_state) ""
+        else if (lt$name[[i]] %in% active) "on" else "off"
+        cat(sprintf("  %-18s %-10s %-6s %s\n",
+          lt$name[[i]], lt$source[[i]], st,
+          .dai_clip(lt$description[[i]] %||% "", if (has_state) 56 else 60)))
+      }
+      if (has_state) {
+        cat("  (state=off: not registered in this session -- plan-mode trim or allow_* switches)\n")
       }
       "ok"
     },
@@ -99,6 +139,8 @@
         "  /help            \u663E\u793A\u672C\u5E2E\u52A9\n",
         "  /clear           \u5F00\u65B0\u4F1A\u8BDD\uFF08\u6E05\u6A21\u578B\u5386\u53F2\uFF0C\u786C\u9884\u7B97\u5F52\u96F6\uFF09\n",
         "  /compact         \u538B\u7F29\u4E0A\u4E0B\u6587\uFF08\u6A21\u578B\u603B\u7ED3\u5F53\u524D\u4F1A\u8BDD\uFF0C\u91CD\u7F6E\u786C\u9884\u7B97\uFF09\n",
+        "  /plan            \u5207\u6362\u5230\u8BA1\u5212\u6A21\u5F0F\uFF08\u53EA\u8BFB\u8C03\u7814\uFF0C\u5F53\u573A\u751F\u6548\uFF0C\u5BF9\u8BDD\u4FDD\u7559\uFF09\n",
+        "  /build           \u5207\u6362\u5230\u6784\u5EFA\u6A21\u5F0F\uFF08\u5168\u5DE5\u5177\uFF0C\u5F53\u573A\u751F\u6548\uFF09\n",
         "  /tools           \u5217\u51FA\u5F53\u524D\u5DE5\u5177\u6E05\u5355\uFF08\u542B\u81EA\u5B9A\u4E49\uFF09\n",
         "  /exit            \u9000\u51FA CLI\n",
         "  \u5176\u5B83\u6587\u5B57\u90FD\u4F5C\u4E3A\u4EFB\u52A1\u53D1\u7ED9 Agent\uFF1B\u5DE5\u5177\u8C03\u7528\u8FC7\u7A0B\u4F1A\u76F4\u63A5\u56DE\u663E\u5728\u63A7\u5236\u53F0\n",

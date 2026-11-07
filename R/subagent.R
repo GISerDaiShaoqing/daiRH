@@ -4,7 +4,7 @@
 #   - \u5DE5\u5177\u96C6\u540C\u4E3B\u4F53\u4F46\u6392\u9664 delegate_task \u81EA\u8EAB\uFF08\u6DF1\u5EA6\u9501 1 \u5C42\uFF0C\u9632\u9012\u5F52\uFF09
 #   - \u72EC\u7ACB\u786C\u9884\u7B97\uFF08cfg$subagent_max_steps\uFF09\uFF1B\u7236\u7EA7\u5929\u7136\u6D88\u8017 1 \u6B65\uFF08\u5305\u88C5\u5668\u81EA\u589E\uFF09
 #   - \u540C\u6B65\u6267\u884C\uFF1A\u59D4\u6D3E\u671F\u95F4\u9762\u677F\u4E0D\u6D41\u5F0F\u56DE\u663E\u5B50\u8FC7\u7A0B\uFF08\u5DF2\u77E5\u8FB9\u754C\uFF0C\u6587\u6863\u8BF4\u660E\uFF09
-# v1 \u7EA6\u675F\uFF1A\u4E0D\u652F\u6301\u5E76\u53D1\u59D4\u6D3E\uFF1B\u5B50\u6A21\u578B\u56FA\u5B9A\u6CBF\u7528\u4E3B\u914D\u7F6E\uFF08\u5C0F\u6A21\u578B\u5DE5\u4EBA\u7559\u7ED9 0.6 \u7684 delegate_model\uFF09
+# v1 \u7EA6\u675F\uFF1A\u4E0D\u652F\u6301\u5E76\u53D1\u59D4\u6D3E\uFF1B0.7 \u8D77\u5B50\u4EE3\u7406\u6A21\u578B\u53EF\u7528 cfg$delegate_model \u6307\u5B9A\uFF08\u7559\u7A7A\u6CBF\u7528\u4E3B\u914D\u7F6E\uFF09\u3002
 
 # \u5B50\u4EE3\u7406\u7CFB\u7EDF\u63D0\u793A\u8BCD\uFF1A\u6BD4\u4E3B\u4F53\u77ED\u5F97\u591A\uFF0C\u5F3A\u8C03\u81EA\u4E3B\u5B8C\u6210 + \u76F4\u63A5\u8F93\u51FA\u7ED3\u679C
 .dairh_subagent_prompt <- function(cfg = dairh_config_get()) {
@@ -53,7 +53,12 @@
   # start \u4E8B\u4EF6\u5DF2\u786E\u4FDD\u7236 state$trace_file \u5C31\u4F4D\uFF1B\u7236 trace \u5173\u95ED\u65F6\u4E24\u8005\u672C\u5C31\u4E0D\u5199\u3002
   sub_state$trace_file <- state$trace_file
   res <- tryCatch({
-    sub_client <- dairh_client(cfg, system_prompt = .dairh_subagent_prompt(cfg))
+    # 0.7 delegate_model\uFF1A\u5B50\u4EE3\u7406\u53EF\u8D70\u8F7B\u91CF\u6A21\u578B\uFF1B\u7559\u7A7A\u6CBF\u7528\u4E3B\u914D\u7F6E\u3002
+    # usage \u6F0F\u6597\u65E0\u9700\u6539\u2014\u2014dairh_client \u8BFB cfg$model\uFF0Cjsonl \u7684 model \u5B57\u6BB5\u81EA\u52A8\u8DDF\u968F\u3002
+    sub_cfg <- cfg
+    dm <- suppressWarnings(trimws(as.character(cfg$delegate_model %||% ""))[[1]])
+    if (length(dm) == 1L && !is.na(dm) && nzchar(dm)) sub_cfg$model <- dm
+    sub_client <- dairh_client(sub_cfg, system_prompt = .dairh_subagent_prompt(cfg))
     for (nm in names(tools)) sub_client$register_tool(tools[[nm]])
     sub_state$client <- sub_client
     res_text <- sub_client$chat(task)

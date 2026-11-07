@@ -1,5 +1,43 @@
 # Changelog
 
+## daiRH 0.7.0
+
+- **plan/build 模式（头部按钮热切换）**：面板标题栏新增模式按钮（构建 ⇄
+  计划， 当场生效、对话与硬预算计数不丢）。计划模式 =
+  只读调研：运行时从最终工具集 **物理裁掉**
+  `create_file`/`edit_file`/`run_r_code`/`show_plot`/`show_html`
+  （非提示词劝告），系统提示词换成”调研 + 交付结构化计划”口径；
+  `delegate_task`
+  保留且子代理继承同一模式（天然只读），独立调研不受影响。 控制台
+  `/plan` `/build` 同一实现；config 新增 `mode` 字段管新会话默认值
+  （设置页可选）。核心实现：复用同一 state env 重建工具集 +
+  `set_system_prompt()`/`set_tools()` 原地换（ellmer Chat 为
+  R6，shinychat 起标题与历史重放即用此二机制），trace 记 `mode`
+  事件可审计。
+- **子代理模型 delegate_model**：config 新增
+  `delegate_model`——子代理委派 可指定轻量模型（留空沿用主模型），usage
+  日志 `model` 字段自动跟随对账； 设置页高级区可填，重开面板生效。
+- **tok/s 速度显示 + 请求时长落盘**：漏斗升级为 ellmer
+  `on_request_start`/ `on_request_end` 回调对——`usage.jsonl` 每行新增
+  `duration_s` 与 `tok_per_s`（外部用量监测可算吞吐）；面板状态栏新增「·
+  N tok/s」段， 按 turn 对象一致性过滤（起标题的 clone
+  请求不污染主对话速度显示）。
+- **工作时长**：状态栏新增计时——streaming 期间每秒活跳「⏱ 工作中
+  m分s秒」（shinychat `status` 两态括弧，覆盖整个工具循环），结束冻结为
+  「· 本轮 m分s秒」；开新会话从零计。
+- **思考强度 reasoning_effort**：config 新增 `reasoning_effort`
+  （minimal/low/medium/high，空 =
+  不发送）。双通道透传：openai_compatible 走 `api_args`
+  直进请求体顶层——compatible provider 的 params 白名单不认
+  `reasoning_effort`（请求时警告 Ignoring unsupported parameters
+  并丢弃， 面板 stderr 实测后改道），ollama 走 `params()`
+  原生支持；网关探针实测
+  接受。面板状态栏「思考:关/低/中/高」循环按钮（写配置持久化）+ 设置页
+  下拉；ellmer Chat 无 params
+  热改口，重开面板生效（与模型选择器同语义）。
+- **杂项**：新增 `R/mode.R`，无新增导出函数、无新增依赖；测试基线 PASS
+  404。
+
 ## daiRH 0.6.0
 
 - **手动压缩上下文**：面板输入框下方状态栏右侧新增压缩按钮，CLI 新增

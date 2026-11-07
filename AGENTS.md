@@ -55,10 +55,11 @@
 | `R/harness.R` | 注册表、钩子（拦截/参数改写）、硬预算、trace 写入（harness 核心） |
 | `R/tools_agent.R` | 内置工具（含 `.dai_path_guard` 路径限制闸；名单与 harness.R 的 `.dairh_builtin_tools()` 保持同步） |
 | `R/agent.R` | 系统提示词、`dairh_new_agent()` 组装 |
-| `R/subagent.R` | 子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算） |
+| `R/mode.R` | 计划/构建模式：`.dairh_set_mode()` 热切换核心（复用同一 state env 重建工具集 + `set_system_prompt`/`set_tools` 原地换，trace 记 `mode` 事件）；`.dairh_plan_dropped_tools` 是计划模式物理裁剪清单 |
+| `R/subagent.R` | 子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算；0.7 起 `cfg$delegate_model` 可指定子代理模型） |
 | `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
 | `R/compact.R` | 上下文压缩核心（transcript 渲染 / 主模型一次性摘要 / set_turns 重水合 / 预算重置；面板按钮与 CLI /compact 共用） |
-| `R/usage.R` | token 用量日志（`dairh_client()` 构造时经 on_request_end 单漏斗挂点；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
+| `R/usage.R` | token 用量日志（`dairh_client()` 构造时经 `on_request_start`/`on_request_end` 回调对单漏斗挂点；0.7 起行内含 `duration_s`/`tok_per_s`，并把 rate env 挂 `attr(client,".dairh_rate")` 供面板显示 tok/s；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
 | `R/context.R` | RStudio 编辑器上下文/主会话桥 |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
@@ -71,7 +72,7 @@
 ```sh
 # 1) 单测（必须走 test_local 加载源码包；library(daiRH)+test_dir 跑的是
 #    已安装旧版——0.4 曾因此假红；不要加 --vanilla，C locale 下中文断言两侧
-#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 335
+#    编码表征不一致会出假红）。本地基线：FAIL 0 | WARN 0 | PASS 404
 Rscript -e "testthat::test_local('<包目录>')"
 
 # 2) 装 CI 同参数的本地 R CMD check 门（0.5.1 之前缺这道门发生过：
@@ -108,7 +109,9 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
    量 DOM 几何（`getBoundingClientRect`）定位布局问题；360–900px 与大屏
    1440/1920/2560px 宽度全走一遍再算适配完（面板列跟随 viewer 全宽是
    维护者的口味决定，0.6 试过 1100px 限宽后被否掉——别再擅自加回来；
-   抽屉搜索框的 CSS 钉位规则在 `.dai_panel_css()`）。
+   抽屉搜索框的 CSS 钉位规则在 `.dai_panel_css()`）。0.7 起底部状态栏含
+   工作时长 + token 计量 + tok/s + 思考/压缩两按钮，窄面板下 flex-wrap
+   换行属预期，不算适配问题。
 4. 新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免
    "UI 一套状态、Agent 另一套"的错位。
 
@@ -125,6 +128,12 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 规矩：测试里凡是构造图片显式传 `resize="none"`，或 `skip_if_not_installed("magick")`；
 运行时代码涉及 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。
 不要把 magick 加进 DESCRIPTION（依赖太重）。
+
+**ellmer 避坑（0.7 实测）**：`chat_openai_compatible` 的 params 白名单不认
+`reasoning_effort`——请求时警告 `Ignoring unsupported parameters` 并静默丢弃
+（`chat_openai`/`chat_ollama` 才原生支持，见 ellmer NEWS #940/#720）。要下发它
+走 `api_args`（直进请求体顶层）。规矩：凡是"params 里塞了字段却像没生效"，
+先看面板子进程 stderr 再怀疑网关。
 
 **安装树坑（实测）**：R 装包时不会把 `man/` 拷进安装树——`system.file("man","figures","logo.png")` 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：`man/figures/`（源码位置，load_all 可见）+ `inst/figures/`（硬拷贝，安装树一定在），查找函数两条路径都试。
 

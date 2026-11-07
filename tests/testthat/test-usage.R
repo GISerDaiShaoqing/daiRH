@@ -68,7 +68,9 @@ test_that("usage install registers callback; skips zero-usage turns, logs real o
   cbs <- list()
   fake <- list(on_request_end = function(cb) cbs[[length(cbs) + 1L]] <<- cb)
   cl <- .dairh_usage_install(fake, "mm")
-  expect_identical(cl, fake)
+  # 0.7: install also attaches a rate env, so identical() on the list would see
+  # the new attribute -- assert the return value is the same object instead.
+  expect_true(is.environment(attr(cl, ".dairh_rate")))
   expect_length(cbs, 1L)
   # empty turn (tokens default all-NA) -> no line written
   turn_empty <- ellmer::Turn(role = "assistant",
@@ -96,4 +98,55 @@ test_that("usage install honors DAIRH_USAGE_LOG=0 at registration time", {
   withr::local_envvar(DAIRH_USAGE_LOG = "0")
   .dairh_usage_install(fake2, "mm")
   expect_length(cbs2, 0L)
+})
+
+# 0.7: request timing / tok-per-second in the funnel + rate env for the panel
+test_that("usage funnel records duration_s and tok_per_s; rate env exposed", {
+  tmp <- file.path(tempdir(), paste0("dairh-usage-rate-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  withr::local_options(daiRH.usage_dir = tmp)
+  starts <- list()
+  cbs <- list()
+  fake <- list(
+    on_request_start = function(cb) starts[[length(starts) + 1L]] <<- cb,
+    on_request_end = function(cb) cbs[[length(cbs) + 1L]] <<- cb
+  )
+  cl <- .dairh_usage_install(fake, "m-rate")
+  expect_length(starts, 1L)
+  expect_length(cbs, 1L)
+  renv <- attr(cl, ".dairh_rate")
+  expect_true(is.environment(renv))
+  # no network sleeps: pin the start stamp 2s in the past
+  renv$t0 <- Sys.time() - 2
+  turn <- ellmer::Turn(role = "assistant",
+    contents = list(ellmer::ContentText(text = "z")), tokens = c(10, 50, 0))
+  invisible(cbs[[1]](turn))
+  lines <- readLines(file.path(tmp, "usage.jsonl"), warn = FALSE)
+  expect_length(lines, 1L)
+  j <- jsonlite::parse_json(lines[[1]], simplifyVector = FALSE)
+  expect_equal(as.numeric(j$duration_s), 2, tolerance = 0.2)
+  rate <- as.numeric(j$tok_per_s)
+  expect_true(rate > 20 && rate < 30)
+  # rate env keeps (turn, rate); turn identity lets the panel filter title clones
+  expect_true(identical(renv$last$turn, turn))
+  expect_equal(as.numeric(renv$last$tok_per_s), rate)
+  # cancelled (all-NA) request: no new line, rate not overwritten
+  renv$t0 <- Sys.time() - 1
+  turn_na <- ellmer::Turn(role = "assistant",
+    contents = list(ellmer::ContentText(text = "w")))
+  invisible(cbs[[1]](turn_na))
+  lines2 <- readLines(file.path(tmp, "usage.jsonl"), warn = FALSE)
+  expect_length(lines2, 1L)
+  expect_true(identical(renv$last$turn, turn))
+})
+
+test_that("install tolerates clients without on_request_start (end-only fakes)", {
+  tmp <- file.path(tempdir(), paste0("dairh-usage-endonly-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  withr::local_options(daiRH.usage_dir = tmp)
+  cbs3 <- list()
+  fake3 <- list(on_request_end = function(cb) cbs3[[length(cbs3) + 1L]] <<- cb)
+  cl3 <- .dairh_usage_install(fake3, "mm")
+  expect_length(cbs3, 1L)
+  expect_true(is.environment(attr(cl3, ".dairh_rate")))
 })
