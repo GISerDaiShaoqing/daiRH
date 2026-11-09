@@ -57,6 +57,8 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
   #   openai_compatible\uFF1Aprovider \u7684 params \u767D\u540D\u5355\u4E0D\u8BA4\u5B83\uFF08\u8BF7\u6C42\u65F6\u8B66\u544A
   #   "Ignoring unsupported parameters" \u5E76\u4E22\u5F03\uFF0C0.7 \u9762\u677F stderr \u5B9E\u6D4B\uFF09\uFF0C\u6539\u8D70
   #   api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53\u9876\u5C42\uFF080.7 \u7F51\u5173\u63A2\u9488\u5B9E\u6D4B 200 \u63A5\u53D7\uFF09\u3002"" = \u4E0D\u53D1\u9001\u3002
+  #   0.5.1 \u8D77\u4E0A\u6E38\u5DF2\u4FEE\uFF08\u5047\u7F51\u5173\u5B9E\u6D4B params \u901A\u9053\u80FD\u8FDB\u9876\u5C42\uFF09\uFF1Bapi_args
+  #   \u4FDD\u7559\u4E0D\u6539\uFF0C\u5730\u677F\u4ECD\u662F 0.5.0\u2014\u2014\u5347\u5730\u677F\u524D\u52FF\u7B80\u5316\u56DE\u5355\u901A\u9053\u3002
   effort <- .dairh_norm_effort(cfg$reasoning_effort %||% "")
   temperature <- round(as.numeric(cfg$temperature %||% 0.7), 3)
   params <- ellmer::params(temperature = temperature)

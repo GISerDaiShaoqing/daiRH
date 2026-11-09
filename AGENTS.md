@@ -134,6 +134,9 @@ Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
 （`chat_openai`/`chat_ollama` 才原生支持，见 ellmer NEWS #940/#720）。要下发它
 走 `api_args`（直进请求体顶层）。规矩：凡是"params 里塞了字段却像没生效"，
 先看面板子进程 stderr 再怀疑网关。
+（0.5.1 起上游已修：假网关实测 params 通道的 `reasoning_effort` 能进请求体
+顶层。我们仍保留 api_args 双通道不改——兼容 0.5.0 地板、行为零变化；若未来
+把 ellmer 地板升到 ≥ 0.5.1，可简化回 params 单通道再跑一遍假网关验证。）
 
 **安装树坑（实测）**：R 装包时不会把 `man/` 拷进安装树——`system.file("man","figures","logo.png")` 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：`man/figures/`（源码位置，load_all 可见）+ `inst/figures/`（硬拷贝，安装树一定在），查找函数两条路径都试。
 
