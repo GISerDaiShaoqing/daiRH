@@ -155,6 +155,19 @@ token），缓存命中单列第 3 分量
 `input + cache_read`（`.dairh_ctx_used`），只读 input 会把 123k 占用显示
 成 481/0.0%。`usage.jsonl` 分账两列保持不动（对账口径）。
 
+**shinychat 会话存储三件套（0.8 事故实测）**：抽屉会话 =
+`record.json`（图 拓扑）+
+`turns.jsonl`（**消息正文，按行**，node.turn_ids 引用行号）+ `ui.jsonl`
+三件，缺一即会话不可读（抽屉整列被 parse error 绊倒）。实测
+[`shinychat::chat_clear()`](https://posit-dev.github.io/shinychat/r/reference/chat_clear.html)
+在 FileConversationStore 下会把三件**全部截成 0 字节**——“就地压缩/就地清
+UI”方案因此作废（压缩保持归档+new_chat 路径， 等上游修）。两条纪律：①
+任何”备份后恢复”必须把三件全部恢复并验证抽屉
+可读，恢复完成前**备份目录禁止清理**（0.8.0 曾因此丢一段对话原文，trace
+只能重建工具调用脉络、模型叙述不可恢复）；② 同步长任务（压缩摘要等）前
+必须先让出事件循环画进度弹窗（[`later::later`](https://later.r-lib.org/reference/later.html)
+两段式），否则 Shiny 单线程 下用户全程无反馈。
+
 **ellmer 避坑（0.7 实测）**：`chat_openai_compatible` 的 params
 白名单不认 `reasoning_effort`——请求时警告
 `Ignoring unsupported parameters` 并静默丢弃

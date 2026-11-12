@@ -42,9 +42,13 @@ Prompt advice becomes enforced rules: hard step budget per user turn,
 hooks that can veto or rewrite arguments/results, and full JSONL
 traceability of every tool call (main and sub agents on one timeline). A
 plan/build mode switch trims mutation tools at runtime — read-only
-becomes a fact, not advice. Per-request token usage (with duration and
-output speed) is appended to a JSONL log, aligned with per-request
-billing gateways.
+becomes a fact, not advice. New sessions start with a project brief
+snapshot (git state, directory tree, workspace summary) seeded into the
+system prompt. One-click context compaction shows progress, fully backs
+up the session store beforehand as a restorable entry, and the status
+bar reports context occupancy as the full prompt (input plus cache hits
+— billing-gateway accurate) with per-request usage, duration and output
+speed appended to a JSONL log.
 
 ###### Images in chat
 

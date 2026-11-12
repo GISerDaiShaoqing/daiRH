@@ -384,7 +384,7 @@
 <div class="section level3">
 <h3 id="上下文压缩与-token-计量">上下文压缩与 token 计量<a class="anchor" aria-label="anchor" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8E%8B%E7%BC%A9%E4%B8%8E-token-%E8%AE%A1%E9%87%8F"></a>
 </h3>
-<p>长会话把上下文撑大后，点输入框右侧的<strong>压缩上下文</strong>（CLI 用 <code>/compact</code>）： 主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat， 1 次请求），模型上下文替换为摘要，单轮硬预算重置；原对话存入历史抽屉 可随时找回，聊天记录保留并附压缩横幅。标题栏同时显示<strong>累计 token（输入/ 输出）</strong>与<strong>上下文占用</strong>（最近一次请求的完整 prompt——input 与缓存命中 cache_read 之和，缓存命中的部分照样占窗口；0.8 修：缓存计费网关的 input 只是未命中增量）；在设置里填上模型的 <code>context_window</code> 后，还会显示”上下文 45k / 1M (4.5%)“这样的容量百分比。</p>
+<p>长会话把上下文撑大后，点输入框右侧的<strong>压缩上下文</strong>（CLI 用 <code>/compact</code>）： 主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat， 1 次请求），模型上下文替换为摘要，单轮硬预算重置；压缩在<strong>同一个抽屉 条目内原地完成</strong>（标题不变），压缩前自动把原对话完整备份为抽屉的 「（压缩前备份）」条目可随时找回；确认后弹窗转圈显示进度（摘要是一次 模型请求，可能需要十几秒到一分钟）。标题栏同时 显示<strong>累计 token（输入/ 输出）</strong>与<strong>上下文占用</strong>（最近一次请求的完整 prompt——input 与缓存命中 cache_read 之和，缓存命中的部分照样占窗口；0.8 修：缓存计费网关的 input 只是未命中增量）；在设置里填上模型的 <code>context_window</code> 后，还会显示”上下文 45k / 1M (4.5%)“这样的容量百分比。</p>
 <p>每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会 追加一行 jsonl 到 <code>tools::R_user_dir("daiRH", "data")/usage/usage.jsonl</code> （<code>source/model/ok/input/output/cache_read[/cost/duration_s/tok_per_s]</code>， 与按次计费网关的对账口径一致；0.7 起附带请求时长与输出速度）；环境变量 <code>DAIRH_USAGE_LOG=0</code> 整体关闭。请求出错不记（错误请求网关也不计费）。</p>
 </div>
 <div class="section level3">
@@ -415,6 +415,8 @@
 <li>
 <strong>编辑器上下文是快照式</strong>（后台模式）：随 RStudio 控制台活动自动刷新（改动文件后 Ctrl+S 保存并在控制台按一次回车即可）；<strong>未保存（Untitled）的活动文件抓不到内容</strong>， 讲解/解释前先保存，或直接给文件路径让 Agent <code>read_file</code>
 </li>
+<li>
+<strong>切换/重放历史会话后状态栏计量从零开始</strong>：shinychat 的会话存档不存 token 用量，重放后累计与上下文占用等下一次真实请求带回；<code>usage.jsonl</code> 的按请求 分账不受影响</li>
 </ul>
 </div>
 <div class="section level2">
