@@ -550,7 +550,7 @@ test_that("show_plot falls back to resize=none when magick is missing", {
   expect_true(inherits(out_val[[1]], "ellmer::ContentText"))
   expect_match(out_val[[1]]@text, "OK", fixed = TRUE)
   expect_true(inherits(out_val[[2]], "ellmer::ContentText"))
-  expect_match(out[[2]]@text, "IMG-none", fixed = TRUE)
+  expect_match(out_val[[2]]@text, "IMG-none", fixed = TRUE)
   expect_identical(calls, c("low", "none"))
 })
 
