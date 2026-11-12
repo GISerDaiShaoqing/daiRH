@@ -40,9 +40,11 @@ to the project directory.
 
 Prompt advice becomes enforced rules: hard step budget per user turn,
 hooks that can veto or rewrite arguments/results, and full JSONL
-traceability of every tool call (main and sub agents on one timeline).
-Per-request token usage is appended to a JSONL log, aligned with
-per-request billing gateways.
+traceability of every tool call (main and sub agents on one timeline). A
+plan/build mode switch trims mutation tools at runtime — read-only
+becomes a fact, not advice. Per-request token usage (with duration and
+output speed) is appended to a JSONL log, aligned with per-request
+billing gateways.
 
 ###### Images in chat
 

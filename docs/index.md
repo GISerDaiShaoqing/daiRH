@@ -2,6 +2,15 @@
 
 ![daiRH logo](reference/figures/logo.png)
 
+| 项目    | 信息                                                         |
+|:--------|:-------------------------------------------------------------|
+| 作者    | Shaoqing Dai                                                 |
+| 主页    | <https://gisersqdai.top/mycv/>                               |
+| GitHub  | [@GISerDaiShaoqing](https://github.com/GISerDaiShaoqing)     |
+| E-mail  | <dsq1993qingge@163.com>                                      |
+| ORCID   | [0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728) |
+| License | MIT                                                          |
+
 把一个能**读写文件、运行代码、查文档**的对话式编程 Agent 直接装进
 RStudio 的 Viewer 面板。
 
@@ -328,4 +337,4 @@ testthat::test_dir("path/to/daiRH/tests/testthat", package = "daiRH")
 **Shaoqing
 Dai**（[GISerDaiShaoqing](https://github.com/GISerDaiShaoqing)） · ORCID
 [0000-0003-0858-4728](https://orcid.org/0000-0003-0858-4728) ·
-[个人主页](http://gisersqdai.top/mycv/)
+[个人主页](https://gisersqdai.top/mycv/)

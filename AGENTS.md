@@ -96,7 +96,14 @@ Rscript -e "roxygen2::roxygenise('<包目录>' )"   # 再跟 scripts/fix_rd.R
 #    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR
 
 # 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）
-Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
+#    只走唯一入口 dev/build_site.R（包根目录运行）——它在 build_site 后把
+#    docs/LICENSE{,-text}.{html,md} 许可页重写为 LICENSE 全文。
+#    原因（2026-11 实测）：GitHub licensee 要求 license 候选恰好剩一种许可
+#    证，pkgdown 生成的许可页匹配不成 MIT，会把整仓徽章判成 Other。
+#    已知代价：根 LICENSE 是全文 MIT 而非 DCF 桩（YEAR:/COPYRIGHT HOLDER:），
+#    R CMD check --as-cran 出 1 条 NOTE（License stub is invalid DCF）——
+#    renv 上 CRAN 即此布局，0 error/0 warning 门禁不受影响。
+#    另：不要再跑 usethis::use_mit_license()，它会把 LICENSE 重置回两行桩。
 ```
 
 ## 依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）

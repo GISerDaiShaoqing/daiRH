@@ -105,7 +105,14 @@ Rscript -e "roxygen2::roxygenise('<包目录>' )"   # 再跟 scripts/fix_rd.R
 #    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR
 
 # 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）
-Rscript -e "pkgdown::build_site('<包目录>', override=list(), preview=FALSE)"
+#    只走唯一入口 dev/build_site.R（包根目录运行）——它在 build_site 后把
+#    docs/LICENSE{,-text}.{html,md} 许可页重写为 LICENSE 全文。
+#    原因（2026-11 实测）：GitHub licensee 要求 license 候选恰好剩一种许可
+#    证，pkgdown 生成的许可页匹配不成 MIT，会把整仓徽章判成 Other。
+#    已知代价：根 LICENSE 是全文 MIT 而非 DCF 桩（YEAR:/COPYRIGHT HOLDER:），
+#    R CMD check --as-cran 出 1 条 NOTE（License stub is invalid DCF）——
+#    renv 上 CRAN 即此布局，0 error/0 warning 门禁不受影响。
+#    另：不要再跑 usethis::use_mit_license()，它会把 LICENSE 重置回两行桩。
 ```
 
 ## 依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）
@@ -147,7 +154,10 @@ magick 加进 DESCRIPTION（依赖太重）。
 （`chat_openai`/`chat_ollama` 才原生支持，见 ellmer NEWS
 \#940/#720）。要下发它 走
 `api_args`（直进请求体顶层）。规矩：凡是”params 里塞了字段却像没生效”，
-先看面板子进程 stderr 再怀疑网关。
+先看面板子进程 stderr 再怀疑网关。 （0.5.1 起上游已修：假网关实测 params
+通道的 `reasoning_effort` 能进请求体 顶层。我们仍保留 api_args
+双通道不改——兼容 0.5.0 地板、行为零变化；若未来 把 ellmer 地板升到 ≥
+0.5.1，可简化回 params 单通道再跑一遍假网关验证。）
 
 **安装树坑（实测）**：R 装包时不会把 `man/`
 拷进安装树——`system.file("man","figures","logo.png")`

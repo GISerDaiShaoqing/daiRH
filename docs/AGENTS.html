@@ -132,7 +132,14 @@
 <span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR</span></span>
 <span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a></span>
 <span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co"># 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"pkgdown::build_site('&lt;包目录&gt;', override=list(), preview=FALSE)"</span></span></code></pre></div>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#    只走唯一入口 dev/build_site.R（包根目录运行）——它在 build_site 后把</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#    docs/LICENSE{,-text}.{html,md} 许可页重写为 LICENSE 全文。</span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#    原因（2026-11 实测）：GitHub licensee 要求 license 候选恰好剩一种许可</span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#    证，pkgdown 生成的许可页匹配不成 MIT，会把整仓徽章判成 Other。</span></span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#    已知代价：根 LICENSE 是全文 MIT 而非 DCF 桩（YEAR:/COPYRIGHT HOLDER:），</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#    R CMD check --as-cran 出 1 条 NOTE（License stub is invalid DCF）——</span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#    renv 上 CRAN 即此布局，0 error/0 warning 门禁不受影响。</span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#    另：不要再跑 usethis::use_mit_license()，它会把 LICENSE 重置回两行桩。</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="依赖升级适配清单每次-ellmershinychatshiny-大版本升级照这个走">依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）<a class="anchor" aria-label="anchor" href="#%E4%BE%9D%E8%B5%96%E5%8D%87%E7%BA%A7%E9%80%82%E9%85%8D%E6%B8%85%E5%8D%95%E6%AF%8F%E6%AC%A1-ellmershinychatshiny-%E5%A4%A7%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E7%85%A7%E8%BF%99%E4%B8%AA%E8%B5%B0"></a></h2>
@@ -144,7 +151,7 @@
 <li>新增驻留特性（如会话存储）先设计 harness 侧整合方案再接，避免 “UI 一套状态、Agent 另一套”的错位。</li>
 </ol><p><strong>shinychat 避坑（实测）</strong>：其客户端 markdown 管道允许 <code>&lt;img&gt;</code> 标签通过但会 剥掉 <code>data:</code> 协议的 src（imgCount=1、naturalWidth=0）——greeting/markdown 文本里内嵌图不可行。聊天插图走原生 contents 图片通道（show_plot 即此）； 静态 Logo 放面板自家标记（<code>.dai_title_logo()</code>，data URI 复用 <code>.dai_image_data_uri()</code> 并缓存）。</p>
 <p><strong>magick 避坑（0.5.0 CI 四平台红实测）</strong>：CI 不会安装项目没声明的重型包 （<code>setup-r-dependencies</code> 只按 DESCRIPTION 相依解析），而 <code>ellmer::content_image_file(..., resize != "none")</code> 内部 <code>check_installed("magick")</code> 非交互直接抛错。本地装了 magick 所以测试全绿、CI 才红假性”环境无关”。 规矩：测试里凡是构造图片显式传 <code>resize="none"</code>，或 <code>skip_if_not_installed("magick")</code>； 运行时代码涉及 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。 不要把 magick 加进 DESCRIPTION（依赖太重）。</p>
-<p><strong>ellmer 避坑（0.7 实测）</strong>：<code>chat_openai_compatible</code> 的 params 白名单不认 <code>reasoning_effort</code>——请求时警告 <code>Ignoring unsupported parameters</code> 并静默丢弃 （<code>chat_openai</code>/<code>chat_ollama</code> 才原生支持，见 ellmer NEWS #940/#720）。要下发它 走 <code>api_args</code>（直进请求体顶层）。规矩：凡是”params 里塞了字段却像没生效”， 先看面板子进程 stderr 再怀疑网关。</p>
+<p><strong>ellmer 避坑（0.7 实测）</strong>：<code>chat_openai_compatible</code> 的 params 白名单不认 <code>reasoning_effort</code>——请求时警告 <code>Ignoring unsupported parameters</code> 并静默丢弃 （<code>chat_openai</code>/<code>chat_ollama</code> 才原生支持，见 ellmer NEWS #940/#720）。要下发它 走 <code>api_args</code>（直进请求体顶层）。规矩：凡是”params 里塞了字段却像没生效”， 先看面板子进程 stderr 再怀疑网关。 （0.5.1 起上游已修：假网关实测 params 通道的 <code>reasoning_effort</code> 能进请求体 顶层。我们仍保留 api_args 双通道不改——兼容 0.5.0 地板、行为零变化；若未来 把 ellmer 地板升到 ≥ 0.5.1，可简化回 params 单通道再跑一遍假网关验证。）</p>
 <p><strong>安装树坑（实测）</strong>：R 装包时不会把 <code>man/</code> 拷进安装树——<code>system.file("man","figures","logo.png")</code> 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：<code>man/figures/</code>（源码位置，load_all 可见）+ <code>inst/figures/</code>（硬拷贝，安装树一定在），查找函数两条路径都试。</p>
 </div>
 <div class="section level2">
