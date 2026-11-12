@@ -67,7 +67,7 @@ dairh_bridge_start <- function() {
   dir <- .dairh_bridge_dir()
   # \u6E05\u7406\u4E0A\u4E00\u4EFB\u8BF7\u6C42/\u54CD\u5E94/\u81EA\u68C0\u6B8B\u7559\uFF08\u4E0D\u52A8 context-snapshot.json\uFF09
   for (f in list.files(dir, pattern = "^(req|resp|selftest)-.*\\.json$", full.names = TRUE)) {
-    tryCatch(file.remove(f), error = function(e) NULL)
+    tryCatch(suppressWarnings(file.remove(f)), error = function(e) NULL)
   }
   .dairh_bridge_env$dir <- dir
   .dairh_bridge_env$pumping <- TRUE
@@ -105,7 +105,7 @@ dairh_bridge_start <- function() {
           ), auto_unbox = TRUE), resp, useBytes = TRUE), error = function(e2) NULL)
           FALSE
         })
-        tryCatch(file.remove(rf), error = function(e) NULL)
+        tryCatch(suppressWarnings(file.remove(rf)), error = function(e) NULL)
         if (!ok) invisible(NULL)
       }
     }, error = function(e) NULL)
@@ -151,10 +151,10 @@ dairh_bridge_start <- function() {
   info <- file.info(fs)
   ord <- order(info$mtime, decreasing = TRUE)
   fs <- fs[ord]
-  for (f in fs[-1L]) tryCatch(file.remove(f), error = function(e) NULL)
+  for (f in fs[-1L]) tryCatch(suppressWarnings(file.remove(f)), error = function(e) NULL)
   if (is.na(info$mtime[ord][1]) ||
       difftime(Sys.time(), info$mtime[ord][1], units = "secs") > max_age_s) {
-    tryCatch(file.remove(fs[1]), error = function(e) NULL)
+    tryCatch(suppressWarnings(file.remove(fs[1])), error = function(e) NULL)
     return(NULL)
   }
   target <- paste0(fs[1], ".taken")
@@ -204,7 +204,7 @@ dairh_bridge_start <- function() {
     TRUE
   }, error = function(e) FALSE)
   if (!ok) return(`attr<-`(character(0), "bridge_fail", "req-write-failed"))
-  on.exit(tryCatch(file.remove(rf), error = function(e) NULL), add = TRUE)
+  on.exit(tryCatch(suppressWarnings(file.remove(rf)), error = function(e) NULL), add = TRUE)
   t0 <- Sys.time()
   while (difftime(Sys.time(), t0, units = "secs") < timeout_s) {
     if (file.exists(pf)) {
@@ -212,7 +212,7 @@ dairh_bridge_start <- function() {
         jsonlite::fromJSON(pf, simplifyVector = FALSE),
         error = function(e) NULL
       )
-      tryCatch(file.remove(pf), error = function(e) NULL)
+      tryCatch(suppressWarnings(file.remove(pf)), error = function(e) NULL)
       if (is.null(j)) {
         return(`attr<-`(character(0), "bridge_fail", "resp-parse-failed"))
       }
@@ -408,7 +408,7 @@ dairh_bridge_start <- function() {
   url <- sprintf("http://127.0.0.1:%d", port)
   if (!ready && !child$is_alive()) {
     # \u5B50\u8FDB\u7A0B\u6B7B\u4E86\uFF1A\u767B\u8BB0\u6587\u4EF6\u6CA1\u7528\uFF0C\u9760\u56DE\u6536\u4F1A\u665A\u4E00\u62CD\uFF0C\u88AB\u6B7B\u76F4\u63A5\u6E05
-    tryCatch(file.remove(pid_file), error = function(e) NULL)
+    tryCatch(suppressWarnings(file.remove(pid_file)), error = function(e) NULL)
     out <- tryCatch(if (file.exists(logs$stderr)) {
       paste(readLines(logs$stderr, warn = FALSE), collapse = "")
     } else "\uFF08\u65E0\u8F93\u51FA\uFF09",
@@ -630,7 +630,7 @@ dairh_panel_stop <- function() {
     if (!is.null(pid) && !is.na(pid) && pid > 0L) reg_pids <- c(reg_pids, pid)
     # \u767B\u8BB0\u6587\u4EF6\u5C31\u5730\u6E05\uFF1A\u6B63\u5E38\u6740\u63C9/\u5DF2\u9000\u51FA\u90FD\u4E0D\u8BE5\u9057\u7ED9\u5B64\u513F\u626B\u63CF
     pf <- attr(ch, "dairh_pid_file")
-    if (!is.null(pf)) tryCatch(file.remove(pf), error = function(e) NULL)
+    if (!is.null(pf)) tryCatch(suppressWarnings(file.remove(pf)), error = function(e) NULL)
   }
   .dairh_bg_children$childs <- list()
   # \u505C\u6389\u6240\u6709 stderr \u955C\u50CF\u5FAA\u73AF\uFF08\u907F\u514D\u5B83\u4EEC\u518D\u5BF9\u7740\u6B7B\u8FDB\u7A0B\u6253\u8F6C\uFF09

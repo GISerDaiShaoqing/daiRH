@@ -60,7 +60,7 @@
 | `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
 | `R/compact.R` | 上下文压缩核心（transcript 渲染 / 主模型一次性摘要 / set_turns 重水合 / 预算重置；面板按钮与 CLI /compact 共用） |
 | `R/usage.R` | token 用量日志（`dairh_client()` 构造时经 `on_request_start`/`on_request_end` 回调对单漏斗挂点；0.7 起行内含 `duration_s`/`tok_per_s`，并把 rate env 挂 `attr(client,".dairh_rate")` 供面板显示 tok/s；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
-| `R/context.R` | RStudio 编辑器上下文/主会话桥 |
+| `R/context.R` | RStudio 编辑器上下文/主会话桥；0.8 项目概览（`.dairh_project_brief`：git 快照 system2 / 目录树两层 / 工作区摘要桥接优先，逐项静默降级，进系统提示 `## 项目概览`） |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
 | `R/cli.R` | 控制台 CLI（readline 循环 + ellmer 流式回显） |
@@ -135,6 +135,23 @@ Rscript -e "roxygen2::roxygenise('<包目录>' )"   # 再跟 scripts/fix_rd.R
 规矩：测试里凡是构造图片显式传 `resize="none"`，或 `skip_if_not_installed("magick")`；
 运行时代码涉及 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。
 不要把 magick 加进 DESCRIPTION（依赖太重）。
+
+**缓存网关的占用口径（0.8 实测）**：缓存计费网关把完整 prompt 拆成两笔——
+`turn@tokens` 的 `input` 只是**未命中增量**（几百 token），缓存命中单列第 3
+分量 `cache_read`（十几万）。命中部分**照样占窗口**：面板"上下文占用"必须
+取 `input + cache_read`（`.dairh_ctx_used`），只读 input 会把 123k 占用显示
+成 481/0.0%。`usage.jsonl` 分账两列保持不动（对账口径）。
+
+**shinychat 会话存储三件套（0.8 事故实测）**：抽屉会话 = `record.json`（图
+拓扑）+ `turns.jsonl`（**消息正文，按行**，node.turn_ids 引用行号）+
+`ui.jsonl` 三件，缺一即会话不可读（抽屉整列被 parse error 绊倒）。实测
+`shinychat::chat_clear()` 在 FileConversationStore 下会把三件**全部截成
+0 字节**——"就地压缩/就地清 UI"方案因此作废（压缩保持归档+new_chat 路径，
+等上游修）。两条纪律：① 任何"备份后恢复"必须把三件全部恢复并验证抽屉
+可读，恢复完成前**备份目录禁止清理**（0.8.0 曾因此丢一段对话原文，trace
+只能重建工具调用脉络、模型叙述不可恢复）；② 同步长任务（压缩摘要等）前
+必须先让出事件循环画进度弹窗（`later::later` 两段式），否则 Shiny 单线程
+下用户全程无反馈。
 
 **ellmer 避坑（0.7 实测）**：`chat_openai_compatible` 的 params 白名单不认
 `reasoning_effort`——请求时警告 `Ignoring unsupported parameters` 并静默丢弃

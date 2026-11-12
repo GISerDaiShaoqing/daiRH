@@ -634,11 +634,19 @@ dairh_agent_tools <- function(cfg = dairh_config_get(), state = .dairh_new_state
         # 0.5 \u76F4\u8FD4\uFF1A\u6587\u672C + \u56FE\u7247\u4F5C\u4E3A\u5DE5\u5177\u7ED3\u679C\u8FDB\u5BF9\u8BDD\uFF08ellmer 0.5 \u5B98\u65B9\u652F\u6301 Content \u5217\u8868\uFF09\u3002
         # \u9762\u677F\u5DE5\u5177\u5361\u7247\u5185\u8054\u6E32\u67D3\u3001\u968F\u4F1A\u8BDD\u5386\u53F2\u91CD\u653E\uFF1B\u652F\u6301\u89C6\u89C9\u7684\u7AEF\u70B9\u4E0A\u6A21\u578B\u80FD\u771F\u6B63\u770B\u56FE\u5206\u6790\uFF0C
         # \u7EAF\u6587\u672C\u7AEF\u70B9\u53EA\u770B\u5230\u6587\u5B57\u90E8\u5206\uFF08openai_compatible \u8D70\u964D\u7EA7\u56DE\u9000\uFF0C\u5B9E\u6D4B\u65E0\u5BB3\uFF09\u3002
-        list(
-          ellmer::ContentText(text = paste0(
-            "OK: \u56FE\u7247\u5DF2\u8FDB\u5165\u5BF9\u8BDD\uFF08", r$msg,
-            "\uFF09\u3002\u8BF7\u57FA\u4E8E\u56FE\u7247\u7EE7\u7EED\u5206\u6790\u3002")),
-          r$img
+        # 0.8 \u81EA\u52A8\u5C55\u5F00\uFF1Ashinychat \u5B98\u65B9\u901A\u9053 = \u5DE5\u5177\u51FD\u6570\u76F4\u63A5\u8FD4\u56DE
+        # ContentToolResult(value, extra$display = tool_result_display(open=TRUE))
+        # \uFF08attr \u901A\u9053\u4E0D\u5B58\u5728\u2014\u20140.8 \u5B9E\u6D4B\uFF09\uFF1B\u5426\u5219\u56FE\u7247\u5361\u7247\u9ED8\u8BA4\u6298\u53E0\u3001\u6BCF\u6B21\u90FD\u8981\u624B\u70B9\u3002
+        ellmer::ContentToolResult(
+          list(
+            ellmer::ContentText(text = paste0(
+              "OK: \u56FE\u7247\u5DF2\u8FDB\u5165\u5BF9\u8BDD\uFF08", r$msg,
+              "\uFF09\u3002\u8BF7\u57FA\u4E8E\u56FE\u7247\u7EE7\u7EED\u5206\u6790\u3002")),
+            r$img
+          ),
+          extra = list(display = shinychat::tool_result_display(
+            title = "\u56FE\u8868", open = TRUE, open_style = "minimal"
+          ))
         )
       } else {
         r$msg

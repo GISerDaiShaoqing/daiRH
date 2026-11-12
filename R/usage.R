@@ -152,3 +152,48 @@
   attr(client, ".dairh_rate") <- renv
   client
 }
+
+# 0.8 \u9762\u677F"\u4E0A\u4E0B\u6587\u5360\u7528"\u53D6\u6570\uFF08\u7EAF\u51FD\u6570\uFF0C\u4FBF\u4E8E\u6D4B\u8BD5\uFF09\uFF1A
+# \u7F13\u5B58\u8BA1\u8D39\u7F51\u5173\u628A\u5B8C\u6574 prompt \u62C6\u6210\u4E24\u7B14\u8BB0\u8D26\u2014\u2014input = \u672A\u547D\u4E2D\u589E\u91CF\uFF0C
+# cache_read = \u7F13\u5B58\u547D\u4E2D\uFF080.8 \u5B9E\u6D4B\uFF1Aprompt_tokens \u53EA\u62A5\u589E\u91CF\uFF0C\u547D\u4E2D\u90E8\u5206\u5355\u5217\u7B2C\u4E09\u5206\u91CF\uFF09\u3002
+# \u7F13\u5B58\u547D\u4E2D\u7684\u90E8\u5206\u7167\u6837\u5360\u7740\u4E0A\u4E0B\u6587\u7A97\u53E3\uFF0C\u6545\u5360\u7528 = input + cache_read\u3002
+# tokens \u4E3A numeric(3)\uFF08ellmer \u8FD0\u884C\u65F6\u5F62\u6001\uFF09\u2192 v1+v3\uFF1Bnumeric(2)\uFF08\u65E7\u5F62\u6001/\u9632\u5FA1\uFF09\u2192 v1\uFF1B
+# \u5168\u96F6/\u4E0D\u53EF\u7528 \u2192 NULL\uFF1Btokens \u4E0D\u53EF\u7528\u4E14\u7ED9\u4E86 get_tokens \u6570\u636E\u6846 \u2192 \u672B\u884C input(+cached_input) \u56DE\u9000\u3002
+.dairh_ctx_used <- function(tokens, tb = NULL) {
+  v <- suppressWarnings(as.numeric(tokens))
+  v <- v[is.finite(v) & v >= 0]
+  if (length(v) >= 3L && (v[[1]] > 0 || v[[3]] > 0)) return(v[[1]] + v[[3]])
+  if (length(v) >= 1L && v[[1]] > 0) return(v[[1]])
+  if (is.data.frame(tb) && nrow(tb) > 0) {
+    used <- suppressWarnings(utils::tail(as.numeric(tb$input), 1))
+    if ("cached_input" %in% names(tb)) {
+      cr <- suppressWarnings(utils::tail(as.numeric(tb$cached_input), 1))
+      if (length(cr) == 1L && is.finite(cr) && cr > 0) used <- used + cr
+    }
+    if (length(used) == 1L && is.finite(used) && used > 0) return(used)
+  }
+  NULL
+}
+
+# 0.8 \u538B\u7F29/\u6E05\u7A7A\u540E\u7684"\u4E0A\u4E0B\u6587\u5360\u7528"\u4F30\u7B97\uFF08\u6CA1\u6709\u771F\u5B9E\u8BF7\u6C42\u53EF\u4F9D\u636E\u65F6\uFF09\uFF1A
+# \u7CFB\u7EDF\u63D0\u793A + \u5168\u90E8\u8F6E\u6B21\u6587\u672C\u7684\u5B57\u7B26\u6570 x 0.4\u2014\u2014\u7C97\u4F30\uFF08\u4E2D\u82F1\u6DF7\u6392\u7ECF\u9A8C\u7CFB\u6570\uFF09\uFF0C
+# \u72B6\u6001\u680F\u4F1A\u6807\u6CE8"\u4F30\u7B97"\uFF1B\u4E0B\u4E00\u6B21\u771F\u5B9E\u8BF7\u6C42\u7684 input + cache_read \u81EA\u52A8\u53D6\u4EE3\u5B83\u3002
+.dai_est_ctx <- function(client) {
+  if (is.null(client)) return(NULL)
+  tryCatch({
+    n <- nchar(client$get_system_prompt() %||% "", type = "chars")
+    for (t in client$get_turns()) {
+      txt <- tryCatch(paste(as.character(t@text), collapse = "\n"), error = function(e) "")
+      if (is.list(t@contents %||% NULL)) {
+        for (cc in t@contents) {
+          v <- tryCatch(paste(as.character(cc@text %||% cc@value), collapse = "\n"),
+                        error = function(e) "")
+          txt <- paste(txt, v)
+        }
+      }
+      n <- n + nchar(txt, type = "chars")
+    }
+    if (n <= 0) return(NULL)
+    round(n * 0.4)
+  }, error = function(e) NULL)
+}

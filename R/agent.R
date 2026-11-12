@@ -62,6 +62,14 @@ dairh_system_prompt <- function(cfg = dairh_config_get()) {
       sprintf("- \u6587\u4EF6\u64CD\u4F5C\u88AB\u9650\u5236\u5728\uFF1A %s", base_dir)
     },
     "",
+    if (isTRUE(cfg$project_brief %||% TRUE)) {
+      brief <- .dairh_project_brief(base_dir)
+      if (length(brief)) c(
+        "## \u9879\u76EE\u6982\u89C8\uFF08\u4F1A\u8BDD\u542F\u52A8\u5FEB\u7167\uFF1B\u9700\u8981\u6700\u65B0\u4FE1\u606F\u7528 list_files / workspace_summary \u81EA\u884C\u6838\u67E5\uFF09",
+        brief,
+        ""
+      )
+    },
     sprintf("## \u73AF\u5883\u4FE1\u606F\n\u5DE5\u4F5C\u76EE\u5F55: %s\n%s\nR \u7248\u672C: %s",
       base_dir,
       format(Sys.Date()),

@@ -69,7 +69,7 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 | `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
 | `R/compact.R` | 上下文压缩核心（transcript 渲染 / 主模型一次性摘要 / set_turns 重水合 / 预算重置；面板按钮与 CLI /compact 共用） |
 | `R/usage.R` | token 用量日志（[`dairh_client()`](https://gisersqdai.top/daiRH/reference/dairh_client.md) 构造时经 `on_request_start`/`on_request_end` 回调对单漏斗挂点；0.7 起行内含 `duration_s`/`tok_per_s`，并把 rate env 挂 `attr(client,".dairh_rate")` 供面板显示 tok/s；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
-| `R/context.R` | RStudio 编辑器上下文/主会话桥 |
+| `R/context.R` | RStudio 编辑器上下文/主会话桥；0.8 项目概览（`.dairh_project_brief`：git 快照 system2 / 目录树两层 / 工作区摘要桥接优先，逐项静默降级，进系统提示 `## 项目概览`） |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
 | `R/cli.R` | 控制台 CLI（readline 循环 + ellmer 流式回显） |
@@ -147,6 +147,13 @@ src（imgCount=1、naturalWidth=0）——greeting/markdown
 `resize="none"`，或 `skip_if_not_installed("magick")`； 运行时代码涉及
 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。 不要把
 magick 加进 DESCRIPTION（依赖太重）。
+
+**缓存网关的占用口径（0.8 实测）**：缓存计费网关把完整 prompt 拆成两笔——
+`turn@tokens` 的 `input` 只是**未命中增量**（几百
+token），缓存命中单列第 3 分量
+`cache_read`（十几万）。命中部分**照样占窗口**：面板”上下文占用”必须 取
+`input + cache_read`（`.dairh_ctx_used`），只读 input 会把 123k 占用显示
+成 481/0.0%。`usage.jsonl` 分账两列保持不动（对账口径）。
 
 **ellmer 避坑（0.7 实测）**：`chat_openai_compatible` 的 params
 白名单不认 `reasoning_effort`——请求时警告

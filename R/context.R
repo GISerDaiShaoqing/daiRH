@@ -98,3 +98,84 @@ dairh_nav <- function(path, line = 1) {
     error = function(e) invisible(FALSE)
   )
 }
+
+# ---- 0.8 \u9879\u76EE\u6982\u89C8\uFF08\u4F1A\u8BDD\u542F\u52A8\u5FEB\u7167\uFF0C\u8FDB\u7CFB\u7EDF\u63D0\u793A\uFF09 --------------------------------
+# \u53EA\u8BFB\u4FE1\u606F\u3001\u4EFB\u4F55\u5B50\u9879\u5931\u8D25\u9759\u9ED8\u964D\u7EA7\uFF1Agit \u5FEB\u7167\uFF08system2\uFF0C\u96F6\u65B0\u4F9D\u8D56\uFF09+ \u76EE\u5F55\u6811\u4E24\u5C42 +
+# \u5DE5\u4F5C\u533A\u6458\u8981\uFF08\u6865\u63A5\u4F18\u5148 /workspace \u7AEF\u70B9\uFF0C\u56DE\u9000\u672C\u5730 globalenv\u2014\u2014\u4E0E workspace_summary
+# \u5DE5\u5177\u540C\u6A21\u5F0F\uFF09\u3002\u9762\u677F\u5B50\u8FDB\u7A0B cwd \u5DF2\u662F\u9879\u76EE\u76EE\u5F55\uFF08background.R setwd\uFF09\uFF0Cgit -C \u53CC\u4FDD\u9669\u3002
+
+.dairh_git_run <- function(args) {
+  out <- tryCatch(
+    suppressWarnings(system2("git", args, stdout = TRUE, stderr = FALSE, timeout = 5)),
+    error = function(e) character(0)
+  )
+  st <- attr(out, "status")
+  if (!is.null(st) && st != 0L) return(character(0))
+  out <- trimws(as.character(out))
+  out[nzchar(out)]
+}
+
+.dairh_brief_git <- function(base_dir) {
+  pre <- c("-C", shQuote(base_dir))
+  branch <- .dairh_git_run(c(pre, "rev-parse", "--abbrev-ref", "HEAD"))
+  if (!length(branch)) return(character(0)) # \u65E0 git / \u975E\u4ED3\u5E93 / \u88F8\u4ED3\u5E93 \u2192 \u6574\u6BB5\u8DF3\u8FC7
+  out <- sprintf("- git: \u5206\u652F %s", branch[[1]])
+  head <- .dairh_git_run(c(pre, "log", "-1", "--oneline"))
+  if (length(head)) out <- paste0(out, "\uFF0CHEAD ", head[[1]])
+  st <- .dairh_git_run(c(pre, "status", "--porcelain"))
+  if (length(st)) {
+    out <- paste0(out, sprintf(
+      "\uFF1B\u672A\u63D0\u4EA4\u53D8\u66F4 %s%s",
+      paste(utils::head(st, 15), collapse = "\uFF1B"),
+      if (length(st) > 15) sprintf("\u2026\uFF08\u5171 %d \u9879\uFF09", length(st)) else ""
+    ))
+  }
+  out
+}
+
+.dairh_brief_tree <- function(base_dir) {
+  ents <- tryCatch(
+    list.files(base_dir, all.files = FALSE, no.. = TRUE),
+    error = function(e) character(0)
+  )
+  if (!length(ents)) return(character(0))
+  isdir <- file.info(file.path(base_dir, ents))$isdir
+  isdir[is.na(isdir)] <- FALSE
+  dirs <- ents[isdir]
+  files <- ents[!isdir]
+  out <- character(0)
+  if (length(dirs)) {
+    dd <- dirs[seq_len(min(length(dirs), 30L))]
+    cnt <- vapply(dd, function(d) {
+      length(list.files(file.path(base_dir, d), all.files = FALSE, no.. = TRUE))
+    }, integer(1))
+    txt <- paste(sprintf("%s(%d)", dd, cnt), collapse = "  ")
+    if (length(dirs) > 30) txt <- paste0(txt, " \u2026\uFF08\u5171 ", length(dirs), " \u4E2A\u76EE\u5F55\uFF09")
+    out <- c(out, paste0("- \u76EE\u5F55: ", txt))
+  }
+  if (length(files)) {
+    ff <- paste(files[seq_len(min(length(files), 20L))], collapse = "  ")
+    if (length(files) > 20) ff <- paste0(ff, " \u2026\uFF08\u5171 ", length(files), " \u4E2A\uFF09")
+    out <- c(out, paste0("- \u9876\u5C42\u6587\u4EF6: ", ff))
+  }
+  out
+}
+
+.dairh_project_brief <- function(base_dir = dairh_base_dir(), include_workspace = TRUE) {
+  base_dir <- tryCatch(normalizePath(base_dir, mustWork = FALSE),
+                       error = function(e) base_dir)
+  out <- character(0)
+  out <- c(out, .dairh_brief_git(base_dir))
+  out <- c(out, .dairh_brief_tree(base_dir))
+  if (include_workspace) {
+    ws <- tryCatch(.dairh_bridge_get("/workspace"), error = function(e) character(0))
+    if (!length(ws) || !nzchar(ws)) {
+      ws <- tryCatch(.dai_workspace_summary(), error = function(e) "")
+    }
+    # \u7A7A\u5DE5\u4F5C\u533A\u7684"\u6CA1\u6709\u5168\u5C40\u5BF9\u8C61"\u63D0\u793A\u5BF9\u6982\u89C8\u662F\u566A\u97F3\uFF0C\u8DF3\u8FC7
+    if (length(ws) && nzchar(ws) && !grepl("\u6CA1\u6709\u5168\u5C40\u5BF9\u8C61", ws, fixed = TRUE)) {
+      out <- c(out, paste0("- \u5DE5\u4F5C\u533A: ", ws))
+    }
+  }
+  out
+}

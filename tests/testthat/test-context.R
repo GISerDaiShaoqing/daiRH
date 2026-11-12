@@ -34,3 +34,66 @@ test_that("pos row extraction handles atomic document_position", {
   expect_identical(daiRH:::.dairh_pos_row(NULL, 1L), 1L)
   expect_identical(daiRH:::.dairh_pos_row(c(5, 9), 1L), 5L)
 })
+
+# ---- 0.8: project brief (git snapshot + tree + workspace) -------------------
+
+test_that(".dairh_brief_tree lists dirs with counts and top-level files", {
+  d <- tempfile("dairh-brief-tree")
+  dir.create(file.path(d, "R"), recursive = TRUE)
+  dir.create(file.path(d, "man"), recursive = TRUE)
+  on.exit(unlink(d, recursive = TRUE, force = TRUE), add = TRUE)
+  writeLines("x", file.path(d, "DESCRIPTION"))
+  writeLines("y", file.path(d, "README.md"))
+  out <- daiRH:::.dairh_brief_tree(d)
+  expect_length(out, 2L)
+  expect_match(out[[1]], "R(", fixed = TRUE)
+  expect_match(out[[1]], "man(", fixed = TRUE)
+  expect_match(out[[2]], "DESCRIPTION", fixed = TRUE)
+  expect_match(out[[2]], "README.md", fixed = TRUE)
+})
+
+test_that(".dairh_brief_tree returns nothing for an empty dir", {
+  d <- tempfile("dairh-brief-empty")
+  dir.create(d)
+  on.exit(unlink(d, recursive = TRUE, force = TRUE), add = TRUE)
+  expect_identical(daiRH:::.dairh_brief_tree(d), character(0))
+})
+
+test_that(".dairh_brief_git skips non-repo dirs silently", {
+  d <- tempfile("dairh-brief-nogit")
+  dir.create(d)
+  on.exit(unlink(d, recursive = TRUE, force = TRUE), add = TRUE)
+  expect_identical(daiRH:::.dairh_brief_git(d), character(0))
+})
+
+test_that(".dairh_brief_git reports a branch inside a temp git repo", {
+  skip_on_cran()
+  if (!nzchar(Sys.which("git"))) skip("git not on PATH")
+  d <- tempfile("dairh-brief-git")
+  dir.create(d, recursive = TRUE)
+  on.exit(unlink(d, recursive = TRUE, force = TRUE), add = TRUE)
+  ini <- daiRH:::.dairh_git_run(c("-C", shQuote(d), "init"))
+  if (!length(ini)) skip("git init failed")
+  daiRH:::.dairh_git_run(c("-C", shQuote(d), "-c", "user.name=t",
+    "-c", "user.email=t@x.y", "commit", "--allow-empty", "-m", "init"))
+  out <- daiRH:::.dairh_brief_git(d)
+  expect_true(length(out) >= 1L)
+  expect_match(out[[1]], "git:", fixed = TRUE)
+})
+
+test_that(".dairh_project_brief degrades silently on an empty non-repo dir", {
+  d <- tempfile("dairh-brief-plain")
+  dir.create(d)
+  on.exit(unlink(d, recursive = TRUE, force = TRUE), add = TRUE)
+  expect_identical(
+    daiRH:::.dairh_project_brief(d, include_workspace = FALSE), character(0))
+})
+
+test_that("system prompt carries the project brief section (default on)", {
+  cfg <- daiRH:::dairh_config_default()
+  sp <- daiRH:::dairh_system_prompt(cfg)
+  expect_match(sp, "\u9879\u76EE\u6982\u89C8", fixed = TRUE)
+  cfg$project_brief <- FALSE
+  sp2 <- daiRH:::dairh_system_prompt(cfg)
+  expect_false(grepl("\u9879\u76EE\u6982\u89C8", sp2, fixed = TRUE))
+})

@@ -505,13 +505,17 @@ test_that("show_plot tool returns Content list (text + inline image) on success"
   expect_true(is.character(out_fail))
   expect_match(out_fail, "png/jpg", fixed = TRUE)
 
-  # OK path: list of Content (text first, image second)
+  # OK path: 0.8 \u8D77\u8FD4\u56DE ContentToolResult\uFF08extra$display \u81EA\u52A8\u5C55\u5F00\uFF09\uFF0Cvalue \u4E3A
+  # Content \u5217\u8868\uFF08text first, image second\uFF09
   out_ok <- tools$show_plot(path = ok_png)
-  expect_true(is.list(out_ok))
-  expect_length(out_ok, 2L)
-  expect_true(all(vapply(out_ok, inherits, logical(1), "ellmer::Content")))
-  expect_match(out_ok[[1]]@text, "OK", fixed = TRUE)
-  expect_s3_class(out_ok[[2]], "ellmer::ContentImageInline")
+  expect_s3_class(out_ok, "ellmer::ContentToolResult")
+  expect_s3_class(out_ok@extra$display, "shinychat_tool_result_display")
+  expect_true(out_ok@extra$display$open %||% FALSE) # \u81EA\u52A8\u5C55\u5F00\u63D0\u793A
+  out_val <- out_ok@value
+  expect_length(out_val, 2L)
+  expect_true(all(vapply(out_val, inherits, logical(1), "ellmer::Content")))
+  expect_match(out_val[[1]]@text, "OK", fixed = TRUE)
+  expect_s3_class(out_val[[2]], "ellmer::ContentImageInline")
 })
 
 local_test_trace_dir()
@@ -540,11 +544,12 @@ test_that("show_plot falls back to resize=none when magick is missing", {
     dairh_config_default(), state = .dairh_new_state(dairh_config_default())
   )
   out <- tools$show_plot(path = png)
-  expect_true(is.list(out))
-  expect_length(out, 2L)
-  expect_true(inherits(out[[1]], "ellmer::ContentText"))
-  expect_match(out[[1]]@text, "OK", fixed = TRUE)
-  expect_true(inherits(out[[2]], "ellmer::ContentText"))
+  expect_s3_class(out, "ellmer::ContentToolResult")
+  out_val <- out@value
+  expect_length(out_val, 2L)
+  expect_true(inherits(out_val[[1]], "ellmer::ContentText"))
+  expect_match(out_val[[1]]@text, "OK", fixed = TRUE)
+  expect_true(inherits(out_val[[2]], "ellmer::ContentText"))
   expect_match(out[[2]]@text, "IMG-none", fixed = TRUE)
   expect_identical(calls, c("low", "none"))
 })

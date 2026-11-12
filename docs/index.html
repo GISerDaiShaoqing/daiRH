@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -127,7 +127,7 @@
 <strong>Tools → Addins → DaiRH Settings</strong>：配置 provider / 模型 / Key</li>
 <li>
 <strong>（强烈建议绑快捷键）Tools → Addins → daiRH Send Selection</strong>：选中代码后 一键直发面板讲解（Tools → Modify Keyboard Shortcuts 搜 daiRH 绑定）。 面板里的”讲解选中代码”按钮走快照式上下文，快照只在控制台<strong>运行真实代码</strong> 时刷新（空回车不保证触发）</li>
-<li>面板标题栏从左到右：<strong>模式按钮</strong>（构建 ⇄ 计划，当场热切换，见下文）、 <strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与 单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时 找回）和 <strong>⚙ 设置</strong>（provider·模型·工具数就显示在标题栏）； <strong>输入框下方的状态栏</strong>显示<strong>工作时长</strong>（干活时每秒活跳「工作中」，结束冻结 为「本轮用时」）、本会话累计 token（输入/输出）、上下文容量与最近一次 请求的 <strong>tok/s</strong>；右侧是 <strong>思考强度</strong> 循环按钮（关/低/中/高，透传给网关的 <code>reasoning_effort</code>）与 <strong>压缩上下文</strong> 按钮（长会话一键压缩，见下文）； 聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
+<li>面板标题栏从左到右：<strong>模式按钮</strong>（构建 ⇄ 计划，当场热切换，见下文）、 <strong>🧹 清空对话</strong>（= 开新会话：重置 Agent 会话与 单轮硬预算，不重启面板子进程；后台模式下当前会话先存入历史抽屉、可随时 找回）和 <strong>⚙ 设置</strong>（provider·模型·工具数就显示在标题栏）； <strong>输入框下方的状态栏</strong>显示<strong>工作时长</strong>（干活时每秒活跳「工作中」，结束冻结 为「本轮用时」）、本会话累计 token（输入/输出）、上下文容量（最近一次 请求的<strong>完整 prompt</strong>，含缓存命中部分——压缩时机就看它）与最近一次 请求的 <strong>tok/s</strong>；右侧是 <strong>思考强度</strong> 循环按钮（关/低/中/高，透传给网关的 <code>reasoning_effort</code>）与 <strong>压缩上下文</strong> 按钮（长会话一键压缩，见下文）； 聊天区左上角 <strong>🕘 历史抽屉</strong>（后台模式）：多会话列表/搜索/切换， 重开面板自动续接最近一次会话；四个快捷按钮：
 <ul>
 <li>
 <strong>解释当前文件</strong> / <strong>讲解选中代码</strong> / <strong>审查当前文件</strong> / <strong>R 文档问答</strong>
@@ -238,6 +238,14 @@
 <tr>
 <td><code>bg_image</code></td>
 <td>面板背景图（本地路径或 http(s) URL；留空 = 内置夜樱）</td>
+</tr>
+<tr>
+<td><code>mascot</code></td>
+<td>面板左侧吉祥物图（0.8；本地路径或 http(s) URL；留空 = 内置小机器人）。用第三方插画请保留作者署名并自行确认授权</td>
+</tr>
+<tr>
+<td><code>project_brief</code></td>
+<td>项目概览（0.8，默认开）：新会话系统提示自动带 git 快照/目录树/工作区摘要；无 git 或空项目自动降级</td>
 </tr>
 <tr>
 <td><code>trace</code></td>
@@ -376,7 +384,7 @@
 <div class="section level3">
 <h3 id="上下文压缩与-token-计量">上下文压缩与 token 计量<a class="anchor" aria-label="anchor" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8E%8B%E7%BC%A9%E4%B8%8E-token-%E8%AE%A1%E9%87%8F"></a>
 </h3>
-<p>长会话把上下文撑大后，点输入框右侧的<strong>压缩上下文</strong>（CLI 用 <code>/compact</code>）： 主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat， 1 次请求），模型上下文替换为摘要，单轮硬预算重置；原对话存入历史抽屉 可随时找回，聊天记录保留并附压缩横幅。标题栏同时显示<strong>累计 token（输入/ 输出）</strong>与<strong>上下文占用</strong>（最近一次请求的输入 token）；在设置里填上模型的 <code>context_window</code> 后，还会显示”上下文 45k / 1M (4.5%)“这样的容量百分比。</p>
+<p>长会话把上下文撑大后，点输入框右侧的<strong>压缩上下文</strong>（CLI 用 <code>/compact</code>）： 主模型把本会话（含工具调用链）总结成一份结构化摘要（一次性无工具 Chat， 1 次请求），模型上下文替换为摘要，单轮硬预算重置；原对话存入历史抽屉 可随时找回，聊天记录保留并附压缩横幅。标题栏同时显示<strong>累计 token（输入/ 输出）</strong>与<strong>上下文占用</strong>（最近一次请求的完整 prompt——input 与缓存命中 cache_read 之和，缓存命中的部分照样占窗口；0.8 修：缓存计费网关的 input 只是未命中增量）；在设置里填上模型的 <code>context_window</code> 后，还会显示”上下文 45k / 1M (4.5%)“这样的容量百分比。</p>
 <p>每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会 追加一行 jsonl 到 <code>tools::R_user_dir("daiRH", "data")/usage/usage.jsonl</code> （<code>source/model/ok/input/output/cache_read[/cost/duration_s/tok_per_s]</code>， 与按次计费网关的对账口径一致；0.7 起附带请求时长与输出速度）；环境变量 <code>DAIRH_USAGE_LOG=0</code> 整体关闭。请求出错不记（错误请求网关也不计费）。</p>
 </div>
 <div class="section level3">

@@ -113,7 +113,12 @@ dairh_config_default <- function() {
     allow_run = TRUE,
     restrict_paths = TRUE,
     system_prompt_extra = "",
+    # 0.8 \u9879\u76EE\u6982\u89C8\uFF1A\u65B0\u4F1A\u8BDD\u7CFB\u7EDF\u63D0\u793A\u81EA\u52A8\u5E26 git \u5FEB\u7167 / \u76EE\u5F55\u6811 / \u5DE5\u4F5C\u533A\u6458\u8981\uFF08\u53EA\u8BFB\u4FE1\u606F\uFF09\u3002
+    project_brief = TRUE,
     bg_image = "",
+    # 0.8 \u9762\u677F\u5DE6\u4FA7\u5409\u7965\u7269\u56FE\uFF1A\u672C\u5730\u8DEF\u5F84\u6216 http(s) URL\uFF1B\u7559\u7A7A = \u5185\u7F6E\u5C0F\u673A\u5668\u4EBA SVG\u3002
+    # \uFF08\u4F7F\u7528\u7B2C\u4E09\u65B9\u63D2\u753B\u65F6\u8BF7\u4FDD\u7559\u4F5C\u8005\u7F72\u540D\uFF0C\u5E76\u81EA\u884C\u786E\u8BA4\u6388\u6743\u3002\uFF09
+    mascot = "",
     trace = TRUE,
     trace_dir = "",
     tools_profile = "",

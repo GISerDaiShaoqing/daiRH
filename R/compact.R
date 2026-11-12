@@ -117,3 +117,62 @@
   .dairh_compact_apply(client, s$summary, s$n_old)
   s
 }
+
+
+# 0.8 \u538B\u7F29\u7684\u627E\u56DE\u4FDD\u9669\uFF1A\u628A\u5F53\u524D\u4F1A\u8BDD\u7684 shinychat \u5B58\u50A8\u4E09\u4EF6\u5957
+#\uFF08record.json + turns.jsonl + ui.jsonl\uFF09\u6574\u6811\u590D\u5236\u4E3A\u300C\uFF08\u538B\u7F29\u524D\u5907\u4EFD\uFF09\u300D\u6761\u76EE\u3002
+# new_chat \u662F"\u8BB0\u5F55\u539F\u5730\u91CD\u5F00"\u2014\u2014\u65E7\u8F6E\u6B21\u4E0D\u7559\u526F\u672C\uFF0C\u6CA1\u6709\u8FD9\u4E00\u6B65\u5C31\u6CA1\u6709\u627E\u56DE\u3002
+# record.json \u6539\u5199 id/title \u7528 jsonlite \u5355\u6B21\u5F80\u8FD4 + \u5F62\u72B6\u6821\u9A8C\uFF08nodes/values
+# \u6570\u91CF\u4E0E\u539F\u4EF6\u4E00\u81F4\u624D\u843D\u76D8\uFF0C\u9632 auto_unbox \u5F62\u53D8\uFF09\uFF1B\u5931\u8D25/\u65E0\u8BB0\u5F55\u8FD4\u56DE NULL\uFF0C
+# \u8C03\u7528\u65B9\u8DF3\u8FC7\u5907\u4EFD\u7EE7\u7EED\u538B\u7F29\uFF08\u540E\u679C = \u65E7\u8F6E\u6B21\u4E0D\u53EF\u627E\u56DE\uFF0C\u4E0E\u65E0\u5907\u4EFD\u884C\u4E3A\u76F8\u540C\uFF09\u3002
+.dairh_compact_backup_record <- function(dir = .dairh_history_dir()) {
+  if (!dir.exists(dir)) return(NULL)
+  recs <- list.files(dir, pattern = "^record[.]json$",
+    recursive = TRUE, full.names = TRUE)
+  if (!length(recs)) return(NULL)
+  info <- file.info(recs)
+  src_rec <- recs[order(info$mtime, decreasing = TRUE)][[1]] # \u6B63\u88AB\u5199\u5165\u7684\u5F53\u524D\u4F1A\u8BDD
+  j <- tryCatch(jsonlite::fromJSON(src_rec, simplifyVector = FALSE),
+                error = function(e) NULL)
+  if (is.null(j) || !is.character(j$id) || !nzchar(j$id) ||
+      !is.character(j$title) || !length(j$title)) return(NULL)
+  src_dir <- dirname(src_rec)
+  new_id <- paste0(j$id, sprintf("%06x", as.integer(format(Sys.time(), "%H%M%S"))))
+  new_dir <- file.path(dirname(src_dir), new_id)
+  if (!dir.create(new_dir)) return(NULL) # \u540C\u79D2\u91CD\u538B \u2192 \u76EE\u5F55\u5DF2\u5B58\u5728 \u2192 \u653E\u5F03\u5907\u4EFD
+  # \u9010\u6587\u4EF6 readBin/writeBin \u5B57\u8282\u590D\u5236\uFF08file.copy \u9047 list.files \u7684 ./.. \u6DF7\u5165
+  # \u4E0E\u591A\u6587\u4EF6\u5411\u91CF\u65F6\u5B9E\u6D4B\u4F1A\u4EA7\u51FA 0 \u5B57\u8282\u526F\u672C\u2014\u20140.8 \u4E8B\u6545\u590D\u76D8\u6362\u6389\u7684\uFF09\uFF1B\u590D\u5236\u540E
+  # \u9010\u4E00\u5BF9\u5C3A\u5BF8\u65AD\u8A00\uFF0C\u4EFB\u4F55\u4E0D\u7B26\u5373\u653E\u5F03\u5907\u4EFD\uFF08\u8C03\u7528\u65B9\u7EE7\u7EED\u538B\u7F29\uFF0C\u4E0D\u963B\u65AD\uFF09\u3002
+  files <- list.files(src_dir, full.names = TRUE)
+  if (!length(files)) {
+    unlink(new_dir, recursive = TRUE, force = TRUE)
+    return(NULL)
+  }
+  ok <- tryCatch({
+    for (f0 in files) {
+      b <- readBin(f0, what = "raw", n = file.size(f0))
+      con <- file(file.path(new_dir, basename(f0)), open = "wb")
+      tryCatch({ writeBin(b, con) }, finally = close(con))
+      if (file.size(file.path(new_dir, basename(f0))) != length(b)) return(FALSE)
+    }
+    TRUE
+  }, error = function(e) FALSE)
+  if (!identical(ok, TRUE)) {
+    unlink(new_dir, recursive = TRUE, force = TRUE)
+    return(NULL)
+  }
+  rec <- file.path(new_dir, "record.json")
+  j$id <- new_id
+  j$title <- paste0(j$title[[1]], "\uFF08\u538B\u7F29\u524D\u5907\u4EFD\uFF09")
+  ok <- tryCatch({
+    writeLines(jsonlite::toJSON(j, auto_unbox = TRUE, null = "null"),
+               rec, useBytes = TRUE)
+    v <- jsonlite::fromJSON(rec, simplifyVector = FALSE)
+    length(v$nodes) == length(j$nodes) && length(v$values) == length(j$values)
+  }, error = function(e) FALSE)
+  if (!identical(ok, TRUE)) {
+    unlink(new_dir, recursive = TRUE, force = TRUE)
+    return(NULL)
+  }
+  new_dir
+}

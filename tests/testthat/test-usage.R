@@ -150,3 +150,22 @@ test_that("install tolerates clients without on_request_start (end-only fakes)",
   expect_length(cbs3, 1L)
   expect_true(is.environment(attr(cl3, ".dairh_rate")))
 })
+
+# 0.8: panel context occupancy = full prompt = input + cache_read
+test_that(".dairh_ctx_used sums input and cached tokens", {
+  expect_equal(.dairh_ctx_used(c(481, 306, 120768)), 481 + 120768)
+  expect_equal(.dairh_ctx_used(c(10, 50, 0)), 10)
+  expect_equal(.dairh_ctx_used(c(10, 50)), 10) # numeric(2) legacy/defensive
+  expect_null(.dairh_ctx_used(c(0, 0, 0)))
+  expect_null(.dairh_ctx_used(NULL))
+  expect_null(.dairh_ctx_used(rep(NA_real_, 3)))
+})
+
+test_that(".dairh_ctx_used falls back to get_tokens data frame", {
+  tb <- data.frame(input = c(100, 500), output = c(5, 7))
+  expect_equal(.dairh_ctx_used(NULL, tb), 500)
+  tb2 <- cbind(tb, cached_input = c(0, 4000))
+  expect_equal(.dairh_ctx_used(NULL, tb2), 4500)
+  expect_null(.dairh_ctx_used(NULL, NULL))
+  expect_null(.dairh_ctx_used(NULL, data.frame(input = numeric(0))))
+})

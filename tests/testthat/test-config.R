@@ -120,6 +120,19 @@ test_that("0.7 config fields: defaults, coercion and normalization", {
   expect_identical(.dai_cfg_coerce("delegate_model", " tiny-model ", tpl), " tiny-model ")
 })
 
+# 0.8: mascot image path / project brief toggle
+test_that("0.8 config fields: defaults and coercion", {
+  d <- dairh_config_default()
+  expect_identical(d$mascot, "")
+  expect_true(isTRUE(d$project_brief))
+
+  tpl <- dairh_config_default()
+  expect_false(.dai_cfg_coerce("project_brief", "FALSE", tpl))
+  expect_true(.dai_cfg_coerce("project_brief", "true", tpl))
+  expect_identical(.dai_cfg_coerce("mascot", "C:/a/b.png", tpl), "C:/a/b.png")
+  expect_identical(.dai_cfg_coerce("mascot", "", tpl), "")
+})
+
 test_that("0.7 mode persists through config roundtrip", {
   tmp <- file.path(tempdir(), paste0("daiRH-test-mode-",
     as.integer(Sys.time()), "-", Sys.getpid()))

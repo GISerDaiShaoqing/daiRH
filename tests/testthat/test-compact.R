@@ -128,3 +128,34 @@ test_that("CLI /compact on short conversation reports failure, keeps turns", {
   expect_identical(act, "ok")
   expect_length(a$turns, 0L)
 })
+
+# 0.8: compaction backup entry (full 3-file store copy with shape check)
+
+test_that(".dairh_compact_backup_record copies newest record and rewrites id/title", {
+  store <- file.path(tempdir(), paste0("dairh-bk-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  rec_dir <- file.path(store, "chat-x", "daiRH-test", "c_deadbeef")
+  dir.create(rec_dir, recursive = TRUE)
+  on.exit(unlink(store, recursive = TRUE, force = TRUE), add = TRUE)
+  writeLines("{\"schema_version\":1,\"id\":\"c_deadbeef\",\"title\":\"t1\",\"response_count\":2}",
+    file.path(rec_dir, "record.json"), useBytes = TRUE)
+  writeLines("line-a\nline-b", file.path(rec_dir, "turns.jsonl"), useBytes = TRUE)
+  out <- .dairh_compact_backup_record(store)
+  expect_true(is.character(out) && dir.exists(out))
+  nb <- basename(out)
+  expect_identical(substr(nb, 1, nchar(nb) - 6), "c_deadbeef") # id prefix kept
+  j <- jsonlite::fromJSON(file.path(out, "record.json"), simplifyVector = FALSE)
+  expect_identical(j$id, nb)
+  expect_match(j$title, "\u538B\u7F29\u524D\u5907\u4EFD", fixed = TRUE)
+  # \u4E09\u4EF6\u5957\u968F\u884C\uFF1Aturns.jsonl \u526F\u672C\u5185\u5BB9\u9010\u5B57\u4E00\u81F4
+  expect_identical(readLines(file.path(out, "turns.jsonl"), warn = FALSE),
+    c("line-a", "line-b"))
+})
+
+test_that(".dairh_compact_backup_record returns NULL without records", {
+  d <- tempfile("dairh-bk-empty")
+  dir.create(d)
+  on.exit(unlink(d, recursive = TRUE, force = TRUE), add = TRUE)
+  expect_null(.dairh_compact_backup_record(d))
+  expect_null(.dairh_compact_backup_record(tempfile("dairh-bk-missing")))
+})

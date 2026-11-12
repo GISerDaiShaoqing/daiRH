@@ -70,6 +70,9 @@
       if (is.null(agent)) {
         cat("  \u4F1A\u8BDD\u4E0D\u53EF\u7528\uFF08\u521D\u59CB\u5316\u5931\u8D25\u6216\u5C1A\u672A\u542F\u52A8\uFF09\u3002\n")
       } else {
+        # 0.8 \u8FDB\u5EA6\u63D0\u793A\uFF1A\u538B\u7F29\u662F\u4E00\u6B21\u6A21\u578B\u8BF7\u6C42\uFF0C\u53EF\u80FD\u9700\u8981\u51E0\u5341\u79D2
+        cat("  \u6B63\u5728\u538B\u7F29\uFF08\u4E00\u6B21\u6A21\u578B\u8BF7\u6C42\uFF0C\u53EF\u80FD\u9700\u8981\u5341\u51E0\u79D2\u5230\u4E00\u5206\u949F\uFF09\u2026\u2026\n")
+        utils::flush.console()
         res <- tryCatch(
           .dairh_compact_turns(agent, cfg),
           error = function(e) list(ok = FALSE, msg = conditionMessage(e))
