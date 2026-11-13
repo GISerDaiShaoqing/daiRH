@@ -55,12 +55,34 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 
 - 两轨不可混：R 源转义、Rd 字面。CI 已经用翻车现场验证过这个分工。
 
+- ASCII 红线用**字节扫描**验证：Git Bash 的 `grep` 实为 ugrep，对 UTF-8
+  的 `[^[:print:][:space:]]` 检查假阴性（0.9 差点带上车，as-cran 的
+  non-ASCII 项抓到）。定案命令：
+  `perl -ne '$c += () = /[\x80-\xFF]/g; END { print $c+0 }' <file>`；
+  修复用
+  `perl -CSD -i -pe 's/([^\x00-\x7F])/ sprintf("\\u%04X", ord($1)) /ge' <file>`。
+
+- **perl 转义产物的 `\u` 前缀必须抽查**（`grep -F '\u4E0A' <file>`）：经
+  工具/API 层执行时 `\\u` 会被传输层吃掉一层，perl 里 `"\u%04X"` 的 `\u`
+  是”下一字符大写”而非反斜杠——产物变成**裸 hex、无 `\u` 前缀**，纯
+  ASCII， 字节扫描/parse/R CMD check 全查不出，直到运行期中文乱码（0.9
+  通知串 实测）。且裸 hex 会误伤**代码里的数字与 CSS
+  色值**（3600、#6366f1 这类 恰好全 hex 且落在 CJK
+  码位的合法字面量）——修复这类文件用 Edit 精确
+  锚点，禁用正则批量转义。事故定案扫描：“无引号且非注释的行含 `\uXXXX` =
+  必是损坏”（合法转义只存在于字符串与注释里）。
+
+- **HTML 数字实体是同类雷区**：`&#9889;`（⚡）/`&#9201;`（⏱）里的 hex
+  同样 会被批量转义器吃成 `&#\u9889;`（渲染成 `&⚡;` 怪字，0.9
+  状态栏实测）。 批量修复前先 `grep -n "&#"` 清点实体，修复器必须排除
+  `&#` 前缀的段； 事后扫描同款排除。
+
 ## 代码结构速查
 
 | 文件 | 职责 |
 |----|----|
-| `R/config.R` | 配置读写/预设表（`DAI_LLM_PRESETS`）/coerce 模板 |
-| `R/client.R` | provider→ellmer 客户端、模型列表、opencode 会话头 |
+| `R/config.R` | 配置读写/预设表（`DAI_LLM_PRESETS`）/coerce 模板（0.9 加 `compact_hint`/`title_model`） |
+| `R/client.R` | provider→ellmer 客户端、模型列表、opencode 会话头（0.9 地板 ellmer ≥ 0.5.1：思考强度单通道 params，api_args 旁路已撤） |
 | `R/harness.R` | 注册表、钩子（拦截/参数改写）、硬预算、trace 写入（harness 核心） |
 | `R/tools_agent.R` | 内置工具（含 `.dai_path_guard` 路径限制闸；名单与 harness.R 的 `.dairh_builtin_tools()` 保持同步） |
 | `R/agent.R` | 系统提示词、[`dairh_new_agent()`](https://gisersqdai.top/daiRH/reference/dairh_new_agent.md) 组装 |
@@ -68,7 +90,7 @@ CLI（[`dairh_cli()`](https://gisersqdai.top/daiRH/reference/dairh_cli.md)）。
 | `R/subagent.R` | 子代理委派（delegate_task：独立 Chat、深度锁 1 层、独立预算；0.7 起 `cfg$delegate_model` 可指定子代理模型） |
 | `R/skills.R` | 技能库（约定目录 + read_skill 工具的渐进加载） |
 | `R/compact.R` | 上下文压缩核心（transcript 渲染 / 主模型一次性摘要 / set_turns 重水合 / 预算重置；面板按钮与 CLI /compact 共用） |
-| `R/usage.R` | token 用量日志（[`dairh_client()`](https://gisersqdai.top/daiRH/reference/dairh_client.md) 构造时经 `on_request_start`/`on_request_end` 回调对单漏斗挂点；0.7 起行内含 `duration_s`/`tok_per_s`，并把 rate env 挂 `attr(client,".dairh_rate")` 供面板显示 tok/s；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
+| `R/usage.R` | token 用量日志（[`dairh_client()`](https://gisersqdai.top/daiRH/reference/dairh_client.md) 构造时经 `on_request_start`/`on_request_end` 回调对单漏斗挂点；0.7 起行内含 `duration_s`/`tok_per_s`，并把 rate env 挂 `attr(client,".dairh_rate")` 供面板显示 tok/s；0.9 起行内可选 `reasoning_tokens`——从 `turn@json` 原始响应取明细，未上报时整字段省略——另有 `.dairh_ctx_hot` 压缩提示阈值门；`DAIRH_USAGE_LOG=0` 旁路；测试用 `options(daiRH.usage_dir=)` 换目录） |
 | `R/context.R` | RStudio 编辑器上下文/主会话桥；0.8 项目概览（`.dairh_project_brief`：git 快照 system2 / 目录树两层 / 工作区摘要桥接优先，逐项静默降级，进系统提示 `## 项目概览`） |
 | `R/background.R` | 后台模式：callr 面板子进程、能力桥、孤儿回收 |
 | `R/app_shiny.R` | 面板 UI/CSS/设置 modal；shinychat 接线（chat_ui/chat_server） |
@@ -97,8 +119,16 @@ powershell -Command "foreach ($v in 'LANG','LC_CTYPE','LC_ALL','LANGUAGE'){Remov
   & '<R目录>/bin/R.exe' CMD check --no-manual --as-cran '<包目录>_x.y.z.tar.gz'"
 #    （powershell 要先 cd 到自己工作的临时目录里，build 产物落在那里）
 
-# 3) 装进系统库（Windows 例）
-R.exe --vanilla CMD INSTALL --no-multiarch -l <R 库目录> <包目录>
+# 3) 装进系统库（Windows 例）。**必须先清 LC_* 变量**：INSTALL 也要解析源码，
+#    C locale 下 `\uXXXX` 转义照样退化成 `<U+XXXX>` 字面文本并随 lazy-load DB
+#    落进安装树（0.9 实测：设置页下拉选项全变 <U+xxxx>，运行时修不回来——
+#    只能重装）。bash 例：
+#    env -u LANG -u LC_CTYPE -u LC_ALL -u LANGUAGE \
+#      R.exe --vanilla CMD INSTALL --no-multiarch -l <R 库目录> <包目录>
+#    装完自检（应输出 UTF-8/e6.. 或 GBK 字节，绝不能出现 3c 55 2b = "<U+"）：
+#    Rscript -e "v <- daiRH:::dairh_quick_prompt('explain');
+#      cat(Encoding(v), head(charToRaw(v), 3), '\n')"
+#    运行时防线：R/zzz.R 的 .onLoad 会把断到 C/POSIX 的 LC_CTYPE 拨回 .UTF-8。
 
 # 4) 手改了 roxygen 注释之后
 Rscript -e "roxygen2::roxygenise('<包目录>' )"   # 再跟 scripts/fix_rd.R
@@ -174,10 +204,20 @@ UI”方案因此作废（压缩保持归档+new_chat 路径， 等上游修）�
 （`chat_openai`/`chat_ollama` 才原生支持，见 ellmer NEWS
 \#940/#720）。要下发它 走
 `api_args`（直进请求体顶层）。规矩：凡是”params 里塞了字段却像没生效”，
-先看面板子进程 stderr 再怀疑网关。 （0.5.1 起上游已修：假网关实测 params
-通道的 `reasoning_effort` 能进请求体 顶层。我们仍保留 api_args
-双通道不改——兼容 0.5.0 地板、行为零变化；若未来 把 ellmer 地板升到 ≥
-0.5.1，可简化回 params 单通道再跑一遍假网关验证。）
+先看面板子进程 stderr 再怀疑网关。 （0.5.1 起上游已修。**0.9
+已落地简化**：地板升 ellmer ≥ 0.5.1，`reasoning_effort` 回归 params
+单通道、api_args 旁路撤销，本地假网关复测请求体顶层可见——
+“是否受支持”永远以”当前 provider
+拼出的请求体”为准，这条探针法保留备用。）
+
+**<turn@json> 是现成的原始响应通道（0.9 探明）**：`AssistantTurn` 构造时
+`value_turn()` 把整个响应体挂在 `turn@json`（`class_list`
+槽位），`on_request_end` 回调手里的 turn
+直接可读——流式请求拿到的是合并后的最终 chunk。归一化的 `turn@tokens` 是
+numeric(3)，`completion_tokens_details$reasoning_tokens` 这类
+明细在归一化处被丢；generic `value_reasoning_tokens` 只有 Responses API
+的 provider 实现了它、且仅 otel 遥测路径消费——要明细走 `turn@json`
+自取， 不要碰 provider 层；只挑需要的字段，整个响应体不落盘。
 
 **安装树坑（实测）**：R 装包时不会把 `man/`
 拷进安装树——`system.file("man","figures","logo.png")`

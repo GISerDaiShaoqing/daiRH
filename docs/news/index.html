@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,23 @@
       <small>Source: <a href="https://github.com/GISerDaiShaoqing/daiRH/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.0" id="dairh-090">daiRH 0.9.0<a class="anchor" aria-label="anchor" href="#dairh-090"></a></h2>
+<ul><li>
+<strong>用量账本新增推理（思维链）明细 <code>reasoning_tokens</code></strong>：从请求的原始响应体 <code>usage</code> 里取（turn 对象自带原始响应，Chat Completions 口径 <code>completion_tokens_details$reasoning_tokens</code>，兜一手 Responses 口径 <code>output_tokens_details$reasoning_tokens</code>）。已含在 <code>output</code> 内、仅明细 拆分列，合计口径不变；端点未上报时整字段省略（与 <code>cost</code> 同款约定）， 老账本行照常兼容。</li>
+<li>
+<strong>压缩触发提示（占用阈值）</strong>：状态栏”上下文占用”达到模型窗口的阈值时 读数变警示色并推送一次通知（<code>compact_hint</code>，默认 0.7，设置页可调 0~1， 0 = 关；需已设置 <code>context_window</code>）。压缩/清空后占用降回阈值以下， 自动重新武装，不会重复打扰。</li>
+<li>
+<strong>轻量模型起标题 <code>title_model</code></strong>：留空 = 主模型（默认，与之前一致）。 配置后新会话的自动标题改走轻量模型（<code>reasoning_effort</code> 强制置空—— 标题不需要思考），省主模型的账；标题请求照常进用量漏斗，账本按 <code>title_model</code> 记账，外部监测工具可按模型分账。</li>
+<li>
+<strong>思考过程展示开关 <code>show_thinking</code>（默认开）</strong>：shinychat 0.5 原生渲染 折叠思考块；设置页可关（走 shinychat 的 <code>show_thinking_after_s</code> 负值 通道），重开面板生效。</li>
+<li>
+<strong>服务接入补齐三种协议模式</strong>：provider 新增 <code>openai</code>（OpenAI Responses 协议，请求 <code>{base_url}/responses</code>）与 <code>anthropic</code>（Anthropic Messages 协议，请求 <code>{base_url}/messages</code>），与网关的 chat / messages / responses 三模板一一对应；provider 字段也接受模板 id（<code>opencode-go-chat/messages/   responses</code> 自动归一）。思考强度在 Responses 走原生 params；Anthropic 侧 不透传（budget 语义不同）。设置页 Provider 单选同步四选；预设新增 <code>opencode.go.responses</code> / <code>opencode.go.messages</code>（内置模型清单照 ZCode 模板），三模式的”列出模型”回退全部覆盖，另补 Anthropic 原生列模型 （<code>GET {base_url}/models</code>，<code>x-api-key</code> + <code>anthropic-version</code> 头）。 temperature 支持<strong>留空 = 不发送</strong>——Responses 推理模型等会拒收该字段 （网关 400 “Unsupported parameter” 实测），设置页清空即绕开。</li>
+<li>
+<strong>依赖地板升 ellmer ≥ 0.5.1</strong>：思考强度透传回归单通道——<code>reasoning_effort</code> 统一走 <code>params()</code>（上游 0.5.1 已修 compatible provider 的 params 白名单， 本地假网关实测进请求体顶层），0.7 引入的 <code>api_args</code> 旁路撤销。</li>
+<li>
+<strong>修复：设置页下拉选项显示 <code>&lt;U+XXXX&gt;</code> 乱码（0.7 起潜伏）</strong>：部分 R 会话的 <code>LC_CTYPE</code> 断到 C locale（<code>LC_CTYPE=C.UTF-8</code> 设置失败回退），运行期原生 编码转换把 UTF-8 字符串退化成字面文本——shiny 下拉选项首当其冲（标签 走另一条路径幸存，故”标签正常、选项乱码”）。两层修复：包加载时发现 LC_CTYPE 断线自动拨回 <code>.UTF-8</code>（<code>R/zzz.R</code>）；安装纪律明确要求清空 <code>LC_*</code> 再 <code>CMD INSTALL</code>（C locale 下安装解析会把坏字节写进安装树）。</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.8.0" id="dairh-080">daiRH 0.8.0<a class="anchor" aria-label="anchor" href="#dairh-080"></a></h2>
 <ul><li><p><strong>压缩上下文：进度反馈 + 找回保险 + 状态栏旧账修正</strong>：点击确认后弹出 进度弹窗（CSS 转圈 + 说明文案），压缩完成自动关闭；压缩在同一个抽屉 条目内原地完成（标题不变），压缩前自动把原对话存储三件套（记录图/ 消息正文/UI 转写）整树备份为「（压缩前备份）」条目——new_chat 是记录 原地重开、旧轮次本不留副本，这一步才让”找回”名副其实（备份含形状 校验，失败自动跳过、不阻断压缩）。另修：压缩/清空会替换对话轮次而 shinychat 对此无感知，状态栏会一直显示旧账——现加显式刷新扳手，压缩 时把旧账结转（累计不清零）、清空时归零。</p></li>

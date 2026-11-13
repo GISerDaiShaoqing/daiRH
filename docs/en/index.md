@@ -11,9 +11,11 @@ built on `ellmer` + `shinychat`, and — more importantly — a real
 traces.
 
 It runs any **OpenAI-compatible endpoint** (local Ollama, cloud
-providers) and keeps the console free: the panel runs in an isolated
-`callr` subprocess that talks back to the main R session over a local
-capability bridge. Chinese speaker? The [main documentation is in
+providers) — and since 0.9 speaks three protocol modes: Chat
+Completions, **OpenAI Responses** and **Anthropic Messages** — while
+keeping the console free: the panel runs in an isolated `callr`
+subprocess that talks back to the main R session over a local capability
+bridge. Chinese speaker? The [main documentation is in
 Chinese](https://gisersqdai.top/daiRH/).
 
 ## Install
@@ -40,15 +42,16 @@ to the project directory.
 
 Prompt advice becomes enforced rules: hard step budget per user turn,
 hooks that can veto or rewrite arguments/results, and full JSONL
-traceability of every tool call (main and sub agents on one timeline). A
-plan/build mode switch trims mutation tools at runtime — read-only
-becomes a fact, not advice. New sessions start with a project brief
-snapshot (git state, directory tree, workspace summary) seeded into the
-system prompt. One-click context compaction shows progress, fully backs
-up the session store beforehand as a restorable entry, and the status
-bar reports context occupancy as the full prompt (input plus cache hits
-— billing-gateway accurate) with per-request usage, duration and output
-speed appended to a JSONL log.
+traceability of every tool call (main and sub agents on one timeline) —
+now including per-request reasoning-token breakdowns. A plan/build mode
+switch trims mutation tools at runtime — read-only becomes a fact, not
+advice. New sessions start with a project brief snapshot (git state,
+directory tree, workspace summary) seeded into the system prompt.
+One-click context compaction shows progress, fully backs up the session
+store beforehand as a restorable entry, warns when occupancy crosses a
+configurable threshold, and the status bar reports context occupancy as
+the full prompt (input plus cache hits — billing-gateway accurate) with
+per-request usage, duration and output speed appended to a JSONL log.
 
 ###### Images in chat
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">daiRH</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,15 +64,18 @@
 <p>它按字节流把 .Rd 里的转义重新解码。</p>
 </li>
 <li><p>两轨不可混：R 源转义、Rd 字面。CI 已经用翻车现场验证过这个分工。</p></li>
+<li><p>ASCII 红线用<strong>字节扫描</strong>验证：Git Bash 的 <code>grep</code> 实为 ugrep，对 UTF-8 的 <code>[^[:print:][:space:]]</code> 检查假阴性（0.9 差点带上车，as-cran 的 non-ASCII 项抓到）。定案命令： <code>perl -ne '$c += () = /[\x80-\xFF]/g; END { print $c+0 }' &lt;file&gt;</code>； 修复用 <code>perl -CSD -i -pe 's/([^\x00-\x7F])/ sprintf("\\u%04X", ord($1)) /ge' &lt;file&gt;</code>。</p></li>
+<li><p><strong>perl 转义产物的 <code>\u</code> 前缀必须抽查</strong>（<code>grep -F '\u4E0A' &lt;file&gt;</code>）：经 工具/API 层执行时 <code>\\u</code> 会被传输层吃掉一层，perl 里 <code>"\u%04X"</code> 的 <code>\u</code> 是”下一字符大写”而非反斜杠——产物变成<strong>裸 hex、无 <code>\u</code> 前缀</strong>，纯 ASCII， 字节扫描/parse/R CMD check 全查不出，直到运行期中文乱码（0.9 通知串 实测）。且裸 hex 会误伤<strong>代码里的数字与 CSS 色值</strong>（3600、#6366f1 这类 恰好全 hex 且落在 CJK 码位的合法字面量）——修复这类文件用 Edit 精确 锚点，禁用正则批量转义。事故定案扫描：“无引号且非注释的行含 <code>\uXXXX</code> = 必是损坏”（合法转义只存在于字符串与注释里）。</p></li>
+<li><p><strong>HTML 数字实体是同类雷区</strong>：<code>&amp;#9889;</code>（⚡）/<code>&amp;#9201;</code>（⏱）里的 hex 同样 会被批量转义器吃成 <code>&amp;#\u9889;</code>（渲染成 <code>&amp;⚡;</code> 怪字，0.9 状态栏实测）。 批量修复前先 <code>grep -n "&amp;#"</code> 清点实体，修复器必须排除 <code>&amp;#</code> 前缀的段； 事后扫描同款排除。</p></li>
 </ul></div>
 <div class="section level2">
 <h2 id="代码结构速查">代码结构速查<a class="anchor" aria-label="anchor" href="#%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E9%80%9F%E6%9F%A5"></a></h2>
 <table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>文件</th>
 <th>职责</th>
 </tr></thead><tbody><tr><td><code>R/config.R</code></td>
-<td>配置读写/预设表（<code>DAI_LLM_PRESETS</code>）/coerce 模板</td>
+<td>配置读写/预设表（<code>DAI_LLM_PRESETS</code>）/coerce 模板（0.9 加 <code>compact_hint</code>/<code>title_model</code>）</td>
 </tr><tr><td><code>R/client.R</code></td>
-<td>provider→ellmer 客户端、模型列表、opencode 会话头</td>
+<td>provider→ellmer 客户端、模型列表、opencode 会话头（0.9 地板 ellmer ≥ 0.5.1：思考强度单通道 params，api_args 旁路已撤）</td>
 </tr><tr><td><code>R/harness.R</code></td>
 <td>注册表、钩子（拦截/参数改写）、硬预算、trace 写入（harness 核心）</td>
 </tr><tr><td><code>R/tools_agent.R</code></td>
@@ -88,7 +91,7 @@
 </tr><tr><td><code>R/compact.R</code></td>
 <td>上下文压缩核心（transcript 渲染 / 主模型一次性摘要 / set_turns 重水合 / 预算重置；面板按钮与 CLI /compact 共用）</td>
 </tr><tr><td><code>R/usage.R</code></td>
-<td>token 用量日志（<code><a href="reference/dairh_client.html">dairh_client()</a></code> 构造时经 <code>on_request_start</code>/<code>on_request_end</code> 回调对单漏斗挂点；0.7 起行内含 <code>duration_s</code>/<code>tok_per_s</code>，并把 rate env 挂 <code>attr(client,".dairh_rate")</code> 供面板显示 tok/s；<code>DAIRH_USAGE_LOG=0</code> 旁路；测试用 <code>options(daiRH.usage_dir=)</code> 换目录）</td>
+<td>token 用量日志（<code><a href="reference/dairh_client.html">dairh_client()</a></code> 构造时经 <code>on_request_start</code>/<code>on_request_end</code> 回调对单漏斗挂点；0.7 起行内含 <code>duration_s</code>/<code>tok_per_s</code>，并把 rate env 挂 <code>attr(client,".dairh_rate")</code> 供面板显示 tok/s；0.9 起行内可选 <code>reasoning_tokens</code>——从 <code>turn@json</code> 原始响应取明细，未上报时整字段省略——另有 <code>.dairh_ctx_hot</code> 压缩提示阈值门；<code>DAIRH_USAGE_LOG=0</code> 旁路；测试用 <code>options(daiRH.usage_dir=)</code> 换目录）</td>
 </tr><tr><td><code>R/context.R</code></td>
 <td>RStudio 编辑器上下文/主会话桥；0.8 项目概览（<code>.dairh_project_brief</code>：git 快照 system2 / 目录树两层 / 工作区摘要桥接优先，逐项静默降级，进系统提示 <code>## 项目概览</code>）</td>
 </tr><tr><td><code>R/background.R</code></td>
@@ -124,22 +127,30 @@
 <span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="st">  &amp; '&lt;R目录&gt;/bin/R.exe' CMD check --no-manual --as-cran '&lt;包目录&gt;_x.y.z.tar.gz'"</span></span>
 <span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#    （powershell 要先 cd 到自己工作的临时目录里，build 产物落在那里）</span></span>
 <span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a></span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co"># 3) 装进系统库（Windows 例）</span></span>
-<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="ex">R.exe</span> <span class="at">--vanilla</span> CMD INSTALL <span class="at">--no-multiarch</span> <span class="at">-l</span> <span class="op">&lt;</span>R 库目录<span class="op">&gt;</span> <span class="op">&lt;</span>包目录<span class="op">&gt;</span></span>
-<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a></span>
-<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co"># 4) 手改了 roxygen 注释之后</span></span>
-<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
-<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR</span></span>
-<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a></span>
-<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co"># 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
-<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#    只走唯一入口 dev/build_site.R（包根目录运行）——它在 build_site 后把</span></span>
-<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#    docs/LICENSE{,-text}.{html,md} 许可页重写为 LICENSE 全文。</span></span>
-<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#    原因（2026-11 实测）：GitHub licensee 要求 license 候选恰好剩一种许可</span></span>
-<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#    证，pkgdown 生成的许可页匹配不成 MIT，会把整仓徽章判成 Other。</span></span>
-<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#    已知代价：根 LICENSE 是全文 MIT 而非 DCF 桩（YEAR:/COPYRIGHT HOLDER:），</span></span>
-<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#    R CMD check --as-cran 出 1 条 NOTE（License stub is invalid DCF）——</span></span>
-<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#    renv 上 CRAN 即此布局，0 error/0 warning 门禁不受影响。</span></span>
-<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#    另：不要再跑 usethis::use_mit_license()，它会把 LICENSE 重置回两行桩。</span></span></code></pre></div>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co"># 3) 装进系统库（Windows 例）。**必须先清 LC_* 变量**：INSTALL 也要解析源码，</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#    C locale 下 `\uXXXX` 转义照样退化成 `&lt;U+XXXX&gt;` 字面文本并随 lazy-load DB</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a><span class="co">#    落进安装树（0.9 实测：设置页下拉选项全变 &lt;U+xxxx&gt;，运行时修不回来——</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co">#    只能重装）。bash 例：</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="co">#    env -u LANG -u LC_CTYPE -u LC_ALL -u LANGUAGE \</span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#      R.exe --vanilla CMD INSTALL --no-multiarch -l &lt;R 库目录&gt; &lt;包目录&gt;</span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#    装完自检（应输出 UTF-8/e6.. 或 GBK 字节，绝不能出现 3c 55 2b = "&lt;U+"）：</span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#    Rscript -e "v &lt;- daiRH:::dairh_quick_prompt('explain');</span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#      cat(Encoding(v), head(charToRaw(v), 3), '\n')"</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#    运行时防线：R/zzz.R 的 .onLoad 会把断到 C/POSIX 的 LC_CTYPE 拨回 .UTF-8。</span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co"># 4) 手改了 roxygen 注释之后</span></span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"roxygen2::roxygenise('&lt;包目录&gt;' )"</span>   <span class="co"># 再跟 scripts/fix_rd.R</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#    注意：新函数/新形参必须配全 @param——--as-cran 把漏文档升成 ERROR</span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co"># 5) pkgdown 站点重建（改了 README/NEWS/_pkgdown.yml/函数签名后）</span></span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#    只走唯一入口 dev/build_site.R（包根目录运行）——它在 build_site 后把</span></span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="co">#    docs/LICENSE{,-text}.{html,md} 许可页重写为 LICENSE 全文。</span></span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a><span class="co">#    原因（2026-11 实测）：GitHub licensee 要求 license 候选恰好剩一种许可</span></span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a><span class="co">#    证，pkgdown 生成的许可页匹配不成 MIT，会把整仓徽章判成 Other。</span></span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a><span class="co">#    已知代价：根 LICENSE 是全文 MIT 而非 DCF 桩（YEAR:/COPYRIGHT HOLDER:），</span></span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a><span class="co">#    R CMD check --as-cran 出 1 条 NOTE（License stub is invalid DCF）——</span></span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a><span class="co">#    renv 上 CRAN 即此布局，0 error/0 warning 门禁不受影响。</span></span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a><span class="co">#    另：不要再跑 usethis::use_mit_license()，它会把 LICENSE 重置回两行桩。</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="依赖升级适配清单每次-ellmershinychatshiny-大版本升级照这个走">依赖升级适配清单（每次 ellmer/shinychat/shiny 大版本升级照这个走）<a class="anchor" aria-label="anchor" href="#%E4%BE%9D%E8%B5%96%E5%8D%87%E7%BA%A7%E9%80%82%E9%85%8D%E6%B8%85%E5%8D%95%E6%AF%8F%E6%AC%A1-ellmershinychatshiny-%E5%A4%A7%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E7%85%A7%E8%BF%99%E4%B8%AA%E8%B5%B0"></a></h2>
@@ -153,7 +164,8 @@
 <p><strong>magick 避坑（0.5.0 CI 四平台红实测）</strong>：CI 不会安装项目没声明的重型包 （<code>setup-r-dependencies</code> 只按 DESCRIPTION 相依解析），而 <code>ellmer::content_image_file(..., resize != "none")</code> 内部 <code>check_installed("magick")</code> 非交互直接抛错。本地装了 magick 所以测试全绿、CI 才红假性”环境无关”。 规矩：测试里凡是构造图片显式传 <code>resize="none"</code>，或 <code>skip_if_not_installed("magick")</code>； 运行时代码涉及 magick 一律 tryCatch 降级（show_plot 就是 low→none 回退）。 不要把 magick 加进 DESCRIPTION（依赖太重）。</p>
 <p><strong>缓存网关的占用口径（0.8 实测）</strong>：缓存计费网关把完整 prompt 拆成两笔—— <code>turn@tokens</code> 的 <code>input</code> 只是<strong>未命中增量</strong>（几百 token），缓存命中单列第 3 分量 <code>cache_read</code>（十几万）。命中部分<strong>照样占窗口</strong>：面板”上下文占用”必须 取 <code>input + cache_read</code>（<code>.dairh_ctx_used</code>），只读 input 会把 123k 占用显示 成 481/0.0%。<code>usage.jsonl</code> 分账两列保持不动（对账口径）。</p>
 <p><strong>shinychat 会话存储三件套（0.8 事故实测）</strong>：抽屉会话 = <code>record.json</code>（图 拓扑）+ <code>turns.jsonl</code>（<strong>消息正文，按行</strong>，node.turn_ids 引用行号）+ <code>ui.jsonl</code> 三件，缺一即会话不可读（抽屉整列被 parse error 绊倒）。实测 <code><a href="https://posit-dev.github.io/shinychat/r/reference/chat_clear.html" class="external-link">shinychat::chat_clear()</a></code> 在 FileConversationStore 下会把三件<strong>全部截成 0 字节</strong>——“就地压缩/就地清 UI”方案因此作废（压缩保持归档+new_chat 路径， 等上游修）。两条纪律：① 任何”备份后恢复”必须把三件全部恢复并验证抽屉 可读，恢复完成前<strong>备份目录禁止清理</strong>（0.8.0 曾因此丢一段对话原文，trace 只能重建工具调用脉络、模型叙述不可恢复）；② 同步长任务（压缩摘要等）前 必须先让出事件循环画进度弹窗（<code><a href="https://later.r-lib.org/reference/later.html" class="external-link">later::later</a></code> 两段式），否则 Shiny 单线程 下用户全程无反馈。</p>
-<p><strong>ellmer 避坑（0.7 实测）</strong>：<code>chat_openai_compatible</code> 的 params 白名单不认 <code>reasoning_effort</code>——请求时警告 <code>Ignoring unsupported parameters</code> 并静默丢弃 （<code>chat_openai</code>/<code>chat_ollama</code> 才原生支持，见 ellmer NEWS #940/#720）。要下发它 走 <code>api_args</code>（直进请求体顶层）。规矩：凡是”params 里塞了字段却像没生效”， 先看面板子进程 stderr 再怀疑网关。 （0.5.1 起上游已修：假网关实测 params 通道的 <code>reasoning_effort</code> 能进请求体 顶层。我们仍保留 api_args 双通道不改——兼容 0.5.0 地板、行为零变化；若未来 把 ellmer 地板升到 ≥ 0.5.1，可简化回 params 单通道再跑一遍假网关验证。）</p>
+<p><strong>ellmer 避坑（0.7 实测）</strong>：<code>chat_openai_compatible</code> 的 params 白名单不认 <code>reasoning_effort</code>——请求时警告 <code>Ignoring unsupported parameters</code> 并静默丢弃 （<code>chat_openai</code>/<code>chat_ollama</code> 才原生支持，见 ellmer NEWS #940/#720）。要下发它 走 <code>api_args</code>（直进请求体顶层）。规矩：凡是”params 里塞了字段却像没生效”， 先看面板子进程 stderr 再怀疑网关。 （0.5.1 起上游已修。<strong>0.9 已落地简化</strong>：地板升 ellmer ≥ 0.5.1，<code>reasoning_effort</code> 回归 params 单通道、api_args 旁路撤销，本地假网关复测请求体顶层可见—— “是否受支持”永远以”当前 provider 拼出的请求体”为准，这条探针法保留备用。）</p>
+<p><strong><a href="mailto:turn@json" class="email">turn@json</a> 是现成的原始响应通道（0.9 探明）</strong>：<code>AssistantTurn</code> 构造时 <code>value_turn()</code> 把整个响应体挂在 <code>turn@json</code>（<code>class_list</code> 槽位），<code>on_request_end</code> 回调手里的 turn 直接可读——流式请求拿到的是合并后的最终 chunk。归一化的 <code>turn@tokens</code> 是 numeric(3)，<code>completion_tokens_details$reasoning_tokens</code> 这类 明细在归一化处被丢；generic <code>value_reasoning_tokens</code> 只有 Responses API 的 provider 实现了它、且仅 otel 遥测路径消费——要明细走 <code>turn@json</code> 自取， 不要碰 provider 层；只挑需要的字段，整个响应体不落盘。</p>
 <p><strong>安装树坑（实测）</strong>：R 装包时不会把 <code>man/</code> 拷进安装树——<code>system.file("man","figures","logo.png")</code> 在已安装的包里返回空，函数静默退化成无 Logo（无头验证走 load_all 源码目录，测不出这层）。运行时资源双备份：<code>man/figures/</code>（源码位置，load_all 可见）+ <code>inst/figures/</code>（硬拷贝，安装树一定在），查找函数两条路径都试。</p>
 </div>
 <div class="section level2">
