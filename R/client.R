@@ -7,12 +7,8 @@
 # \u5BF9\u4E25\u683C\u6821\u9A8C Authorization \u7684\u7F51\u5173\uFF08OpenCode Go\uFF09\u5FC5\u73B0 401 Invalid credential\u3002
 # \u6B63\u786E\u5F62\u6001\uFF1Acredentials = function() <\u88F8 key>\uFF0Cellmer \u81EA\u5DF1\u8865 Bearer\u3002
 .dai_make_openai_compatible <- function(base_url, name, system_prompt, key,
-                                        model, params, headers = NULL,
-                                        api_args = NULL) {
-  if (is.null(headers)) headers <- character(0) # \u4E0D\u63A5\u53D7 NULL
-  # api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53\u9876\u5C42\uFF080.7 \u601D\u8003\u5F3A\u5EA6\u8D70\u8FD9\u91CC\uFF1Acompatible provider \u7684
-  # params \u767D\u540D\u5355\u4E0D\u8BA4 reasoning_effort\uFF0C\u8BF7\u6C42\u65F6\u8B66\u544A Ignoring unsupported
-  # parameters \u5E76\u4E22\u5F03\u2014\u20140.7 \u9762\u677F stderr \u5B9E\u6D4B\uFF09\u3002
+                                        model, params, headers = NULL) {
+  if (is.null(headers)) headers <- character(0) # 4E0D63A553D7 NULL
   ellmer::chat_openai_compatible(
     base_url = base_url,
     name = name,
@@ -20,7 +16,6 @@
     credentials = if (nzchar(key)) function() key else NULL,
     model = model,
     params = params,
-    api_args = api_args %||% list(),
     api_headers = headers,
     echo = "none"
   )
@@ -39,6 +34,27 @@
   stats::setNames(c(sid), "x-opencode-session")
 }
 
+# \u7EC4\u88C5 params: temperature = NA = \u4E0D\u53D1\u9001\u8BE5\u5B57\u6BB5\u2014\u2014Responses \u63A8\u7406\u6A21\u578B\u62D2\u6536\uFF0C0.9 \u5B9E\u6D4B\u3002
+# \u7F3A\u7701\u5224\u5B9A\u53EA\u8BA4\u0020NULL\uFF1B\u663E\u5F0F NA = \u4E0D\u53D1\u9001\u3002 \u5343\u4E07\u522B\u7528 %||% \u2014\u2014 daiRH \u7684 %||% \u4F1A\u628A NA \u4E5F\u5F53\u7F3A\u7701\u541E\u6389\uFF08\u0030\u002E\u0039\u0020\u5B9E\u6D4B\u81EA\u6253\u8138\uFF09\u3002
+.dai_resolve_temperature <- function(cfg) {
+  tv <- cfg$temperature
+  if (is.null(tv) || length(tv) == 0L) return(0.7)
+  suppressWarnings(as.numeric(tv[[1]]))
+}
+
+.dai_build_params <- function(temperature, effort) {
+  if (is.finite(temperature) && nzchar(effort)) {
+    ellmer::params(temperature = round(temperature, 3),
+      reasoning_effort = effort)
+  } else if (is.finite(temperature)) {
+    ellmer::params(temperature = round(temperature, 3))
+  } else if (nzchar(effort)) {
+    ellmer::params(reasoning_effort = effort)
+  } else {
+    ellmer::params()
+  }
+}
+
 #' \u6309\u914D\u7F6E\u6784\u5EFA ellmer Chat \u5BF9\u8C61
 #'
 #' provider = "ollama" \u65F6\u4F7F\u7528 [ellmer::chat_ollama]\uFF0C
@@ -52,24 +68,18 @@
 #' @export
 dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
   base_url <- .dai_strip_url(cfg$base_url %||% "")
-  # 0.7 \u601D\u8003\u5F3A\u5EA6\uFF1Areasoning_effort \u900F\u4F20\uFF0C\u4E24\u6761\u901A\u9053\u4E0D\u540C\u2014\u2014
-  #   ollama\uFF1Aellmer \u539F\u751F\u652F\u6301 params(reasoning_effort=)\uFF08NEWS #940\uFF09\uFF1B
-  #   openai_compatible\uFF1Aprovider \u7684 params \u767D\u540D\u5355\u4E0D\u8BA4\u5B83\uFF08\u8BF7\u6C42\u65F6\u8B66\u544A
-  #   "Ignoring unsupported parameters" \u5E76\u4E22\u5F03\uFF0C0.7 \u9762\u677F stderr \u5B9E\u6D4B\uFF09\uFF0C\u6539\u8D70
-  #   api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53\u9876\u5C42\uFF080.7 \u7F51\u5173\u63A2\u9488\u5B9E\u6D4B 200 \u63A5\u53D7\uFF09\u3002"" = \u4E0D\u53D1\u9001\u3002
-  #   0.5.1 \u8D77\u4E0A\u6E38\u5DF2\u4FEE\uFF08\u5047\u7F51\u5173\u5B9E\u6D4B params \u901A\u9053\u80FD\u8FDB\u9876\u5C42\uFF09\uFF1Bapi_args
-  #   \u4FDD\u7559\u4E0D\u6539\uFF0C\u5730\u677F\u4ECD\u662F 0.5.0\u2014\u2014\u5347\u5730\u677F\u524D\u52FF\u7B80\u5316\u56DE\u5355\u901A\u9053\u3002
+  # 0.9 \u5730\u677F\u5347 0.5.1 \u540E\u56DE\u5F52\u5355\u901A\u9053\uFF1Areasoning_effort \u7EDF\u4E00\u8D70 params()\u2014\u2014\u4E0A\u6E38 0.5.1
+  # \u5DF2\u628A compatible provider \u7684 params \u767D\u540D\u5355\u4FEE\u597D\uFF08\u5047\u7F51\u5173\u5B9E\u6D4B\u80FD\u8FDB\u8BF7\u6C42\u4F53\u9876\u5C42\uFF09\uFF0C
+  # api_args \u65C1\u8DEF\u64A4\u9500\u3002"" = \u4E0D\u53D1\u9001\u3002\u53EF\u53D6 minimal/low/medium/high\u3002
   effort <- .dairh_norm_effort(cfg$reasoning_effort %||% "")
-  temperature <- round(as.numeric(cfg$temperature %||% 0.7), 3)
-  params <- ellmer::params(temperature = temperature)
-  params_ollama <- if (nzchar(effort)) {
-    ellmer::params(temperature = temperature, reasoning_effort = effort)
-  } else {
-    params
-  }
-  api_args <- if (nzchar(effort)) list(reasoning_effort = effort) else list()
+  temperature <- .dai_resolve_temperature(cfg)
+  params <- .dai_build_params(temperature, effort)
   provider <- .dairh_norm_provider(cfg$provider)
   model <- cfg$model %||% ""
+  # \u65B0\u534F\u8BAE\u5206\u652F (chat_openai / chat_anthropic) \u7684 api_headers \u4E0D\u63A5\u53D7 NULL\u2014\u2014
+  # \u4E0E .dai_make_openai_compatible \u7684 \u5B88\u536B\u540C\u6B3E (0.9 \u4E09\u6A21\u5F0F\u8865\u9F50\u65F6\u5B9E\u6D4B)\u3002
+  headers <- .dai_session_headers(base_url)
+  if (is.null(headers)) headers <- character(0)
   cl <- if (identical(provider, "ollama")) {
     # chat_ollama \u6784\u9020\u65F6\u4F1A ping \u7AEF\u70B9\uFF1B\u670D\u52A1\u5668\u4E0D\u5728\u7EBF\u65F6\u4E0D\u80FD\u8BA9\u9762\u677F\u76F4\u63A5\u5D29\u6389\uFF1A
     # \u9000\u56DE Ollama \u7684 /v1 OpenAI \u517C\u5BB9\u63A5\u53E3\uFF08\u6784\u9020\u4E0D\u8054\u7F51\uFF0C\u9519\u8BEF\u5EF6\u8FDF\u5230\u8BF7\u6C42\u65F6\u5C55\u793A\uFF09\u3002
@@ -78,7 +88,7 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
         system_prompt = system_prompt,
         base_url = base_url,
         model = model,
-        params = params_ollama,
+        params = params,
         echo = "none"
       ),
       error = function(e) {
@@ -89,8 +99,7 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
           key = "not-needed",
           model = model,
           params = params,
-          headers = .dai_session_headers(paste0(base_url, "/v1")),
-          api_args = api_args
+          headers = .dai_session_headers(paste0(base_url, "/v1"))
         )
       }
     )
@@ -102,11 +111,43 @@ dairh_client <- function(cfg = dairh_config_get(), system_prompt = NULL) {
       key = dairh_api_key_value(cfg),
       model = model,
       params = params,
-      headers = .dai_session_headers(base_url),
-      api_args = api_args
+      headers = .dai_session_headers(base_url)
+    )
+    # 0.9 \u4E09\u6A21\u5F0F\u8865\u9F50\uFF1AOpenAI Responses \u534F\u8BAE\u76F4\u8FDE\uFF08\u4E0E\u7F51\u5173 responses \u6A21\u677F\u540C\u6784\uFF09\u3002
+    # chat_openai \u6784\u9020\u4E0D\u8054\u7F51\uFF1B\u8BF7\u6C42 = {base_url}/responses\uFF0Cbase_url \u4EE5 /v1 \u6536\u5C3E\u3002
+  } else if (identical(provider, "openai")) {
+    ellmer::chat_openai(
+      system_prompt = system_prompt,
+      base_url = base_url,
+      credentials = if (nzchar(dairh_api_key_value(cfg))) {
+        function() dairh_api_key_value(cfg)
+      } else NULL,
+      model = model,
+      params = params,
+      api_args = if (nzchar(effort)) {
+        list(reasoning = list(effort = effort, summary = "auto"))
+      } else {
+        list()
+      },
+      api_headers = headers,
+      echo = "none"
+    )
+    # 0.9 Anthropic Messages \u534F\u8BAE\u76F4\u8FDE\uFF08\u4E0E\u7F51\u5173 messages \u6A21\u677F\u540C\u6784\uFF09\uFF1A\u8BF7\u6C42 = {base_url}/messages\u3002
+    # reasoning_effort \u5728 Anthropic \u662F budget \u8BED\u4E49\uFF0C\u4E0D\u900F\u4F20\uFF08params \u767D\u540D\u5355\u4F1A\u4E22\uFF09\u3002
+  } else if (identical(provider, "anthropic")) {
+    ellmer::chat_anthropic(
+      system_prompt = system_prompt,
+      base_url = base_url,
+      credentials = if (nzchar(dairh_api_key_value(cfg))) {
+        function() dairh_api_key_value(cfg)
+      } else NULL,
+      model = model,
+      params = .dai_build_params(temperature, ""),
+      api_headers = headers,
+      echo = "none"
     )
   } else {
-    stop("\u672A\u77E5\u7684 provider: ", cfg$provider, "\uFF08\u5E94\u4E3A ollama \u6216 openai_compatible\uFF09",
+    stop("\u672A\u77E5\u7684 provider: ", cfg$provider, "\uFF08\u5E94\u4E3A ollama / openai_compatible / openai / anthropic\uFF09",
       call. = FALSE
     )
   }
@@ -139,6 +180,24 @@ dairh_list_models <- function(cfg = dairh_config_get(), timeout_s = 10) {
         body <- httr2::resp_body_json(resp)
         m <- body$models
         out <- vapply(m, function(x) x$name %||% x$model %||% NA_character_,
+          character(1)
+        )
+        out[!is.na(out)]
+      } else if (identical(provider, "anthropic")) {
+        # Anthropic Messages \u539F\u751F\u5217\u6A21\u578B\uFF1AGET {base_url}/models\uFF0C
+        # \u8BA4 x-api-key + anthropic-version\uFF08Bearer \u4E0D\u6536\u2014\u20140.9 \u5B9E\u6D4B\uFF09\u3002
+        req <- httr2::request(base_url) |>
+          httr2::req_url_path("models") |>
+          httr2::req_timeout(timeout_s)
+        key <- dairh_api_key_value(cfg)
+        if (nzchar(key)) {
+          req <- req |>
+            httr2::req_headers(`x-api-key` = key,
+              `anthropic-version` = "2023-06-01")
+        }
+        resp <- httr2::req_perform(req)
+        body <- httr2::resp_body_json(resp)
+        out <- vapply(body$data, function(x) x$id %||% x$name %||% NA_character_,
           character(1)
         )
         out[!is.na(out)]

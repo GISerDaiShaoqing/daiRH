@@ -53,7 +53,8 @@ devtools::install("path/to/daiRH")
    找回）和 **⚙ 设置**（provider·模型·工具数就显示在标题栏）；
    **输入框下方的状态栏**显示**工作时长**（干活时每秒活跳「工作中」，结束冻结
    为「本轮用时」）、本会话累计 token（输入/输出）、上下文容量（最近一次
-   请求的**完整 prompt**，含缓存命中部分——压缩时机就看它）与最近一次
+   请求的**完整 prompt**，含缓存命中部分——压缩时机就看它；占用过阈值
+   （`compact_hint`，默认 70%）读数变警示色并提示压缩）与最近一次
    请求的 **tok/s**；右侧是 **思考强度** 循环按钮（关/低/中/高，透传给网关的
    `reasoning_effort`）与 **压缩上下文** 按钮（长会话一键压缩，见下文）；
    聊天区左上角 **🕘 历史抽屉**（后台模式）：多会话列表/搜索/切换，
@@ -108,14 +109,14 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 
 | 字段 | 说明 |
 |---|---|
-| `provider` | `ollama`（走 `chat_ollama`）或 `openai_compatible`（DeepSeek/GLM/Kimi/任意兼容网关） |
+| `provider` | 四选（0.9 起）：`ollama`（走 `chat_ollama`）、`openai_compatible`（Chat Completions：DeepSeek/GLM/Kimi/任意兼容网关）、`openai`（Responses 协议，请求 `{base_url}/responses`）、`anthropic`（Messages 协议，请求 `{base_url}/messages`）；也接受网关模板 id（`opencode-go-chat/messages/responses` 自动归一） |
 | `base_url` | 如 `http://localhost:11434`（本机 Ollama）、`https://api.deepseek.com` |
 | `model` | 模型名；设置里可"列出模型"自动发现（网关不支持时回退预设内置清单） |
 | `context_window` | 模型上下文窗口（tokens，状态栏"上下文容量"的分母；留空 = 未知，只显示占用） |
 | `reasoning_effort` | 思考强度（0.7）：`minimal/low/medium/high` 透传给网关，空 = 不发送；状态栏「思考:」按钮可循环切换 |
 | `mode` | 新会话默认模式（0.7）：`build`（全工具）或 `plan`（只读调研）；面板头部按钮可热切 |
 | `api_key` / `api_key_env` | key 直填，或写环境变量名（如 `DAI_API_KEY`）；Ollama 可留空 |
-| `temperature` | 采样温度 |
+| `temperature` | 采样温度；**留空 = 不发送**（0.9——Responses 推理模型等拒收该字段，网关 400 实测） |
 | `run_mode` | `bg`（默认，后台运行，不占控制台）或 `gadget`（经典模式，控制台同步占用） |
 | `max_steps` | Agent 单轮工具调用步数：提示词约束 + **硬预算**（超出即拦截，新消息自动重置） |
 | `allow_edit` / `allow_run` | 安全开关：关掉后 `edit_file/create_file` / `run_r_code` 不会注册给模型 |
@@ -124,6 +125,9 @@ file.path(tools::R_user_dir("daiRH", "config"), "config.json")
 | `bg_image` | 面板背景图（本地路径或 http(s) URL；留空 = 内置夜樱） |
 | `mascot` | 面板左侧吉祥物图（0.8；本地路径或 http(s) URL；留空 = 内置小机器人）。用第三方插画请保留作者署名并自行确认授权 |
 | `project_brief` | 项目概览（0.8，默认开）：新会话系统提示自动带 git 快照/目录树/工作区摘要；无 git 或空项目自动降级 |
+| `compact_hint` | 压缩触发提示阈值（0.9；占用/窗口，默认 0.7，0 = 关；过阈值读数变警示色并提示一次） |
+| `title_model` | 轻量模型起标题（0.9；留空 = 主模型；填便宜模型名省起标题的账，用量账本按它分账） |
+| `show_thinking` | 是否显示模型思考过程（0.9；默认开；关 = 面板不渲染折叠思考块，重开面板生效） |
 | `trace` | 是否记录工具调用轨迹（`dairh_trace()` 查看；默认开） |
 | `trace_dir` | 工具轨迹目录（留空 = 默认 cache 目录；0.5 起可配） |
 | `tools_profile` | 工具脚本路径（启动时 source，注册自定义工具/钩子；后台模式必经通道） |
@@ -272,14 +276,15 @@ cache_read 之和，缓存命中的部分照样占窗口；0.8 修：缓存计�
 
 每次模型请求的 token 用量（含工具循环每次调用、会话起标题、子代理）都会
 追加一行 jsonl 到 `tools::R_user_dir("daiRH", "data")/usage/usage.jsonl`
-（`source/model/ok/input/output/cache_read[/cost/duration_s/tok_per_s]`，
-与按次计费网关的对账口径一致；0.7 起附带请求时长与输出速度）；环境变量
-`DAIRH_USAGE_LOG=0` 整体关闭。请求出错不记（错误请求网关也不计费）。
+（`source/model/ok/input/output/cache_read[/reasoning_tokens/cost/duration_s/tok_per_s]`，
+与按次计费网关的对账口径一致；0.7 起附带请求时长与输出速度，0.9 起附带
+推理（思维链）token 明细——已含在 output 内的拆分列，端点未上报时省略）；
+环境变量 `DAIRH_USAGE_LOG=0` 整体关闭。请求出错不记（错误请求网关也不计费）。
 
 ### 路线图
 
-- 小模型分担杂务（会话标题、压缩摘要、参数审查走轻量模型；0.7 的
-  `delegate_model` 已覆盖子代理委派这一路）
+- 小模型分担杂务（压缩摘要、参数审查走轻量模型；`delegate_model` 已覆盖
+  子代理委派、0.9 的 `title_model` 已覆盖会话标题）
 - 子代理并发委派；工具参数安全审查（默认关闭的 pre_tool 审查钩子）；
   思考强度的会话内热切换（等 ellmer 提供 params 热改口）
 

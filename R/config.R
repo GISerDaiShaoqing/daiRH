@@ -58,24 +58,67 @@ DAI_LLM_PRESETS <- list(
     model = "deepseek-reasoner",
     models = c("deepseek-reasoner", "deepseek-chat")
   ),
-  `opencode.go` = list(
+  `opencode.go.chat` = list(
     provider = "openai_compatible",
     # OpenCode Go \u8BA1\u5212\u7F51\u5173\uFF08OpenAI \u517C\u5BB9\uFF09\uFF1Bkey \u5728\u8BBE\u7F6E\u91CC\u81EA\u586B\uFF08\u6216\u586B\u73AF\u5883\u53D8\u91CF\u540D\uFF09\u3002
-    # \u8BE5\u7F51\u5173\u672A\u5B9E\u73B0 GET /models\uFF1A"\u5217\u51FA\u6A21\u578B"\u6309\u94AE\u5728\u6B64\u9884\u8BBE\u4E0B\u81EA\u52A8\u56DE\u9000\u5230\u4E0B\u65B9\u5185\u7F6E\u6E05\u5355\u3002
+    # \u8BE5\u7F51\u5173\u672A\u5B9E\u73B0 GET /models\uFF1A\u201C\u5217\u51FA\u6A21\u578B\u201D\u6309\u94AE\u5728\u6B64\u9884\u8BBE\u4E0B\u81EA\u52A8\u56DE\u9000\u5230\u4E0B\u65B9\u5185\u7F6E\u6E05\u5355\u3002
     base_url = "https://opencode.ai/inference/go/openai/v1",
     model = "glm-5.3-flash",
     models = c(
-      "glm-5.3-flash", "glm-5.3",
-      "kimi-k3.1-pro", "kimi-k3", "kimi-k2.7-code",
-      "deepseek-v4.1-flash", "deepseek-v4-pro",
-      "longcat-2.0", "mimo-v2.6-flash", "mimo-v2.6-pro",
-      "minimax-m3.1-flash"
+      "glm-5.3-flash", "glm-5.3", "glm-5.2", "glm-5.1",
+      "kimi-k3.1-pro", "kimi-k3", "kimi-k2.7-code", "kimi-k2.6",
+      "deepseek-v4.1-flash", "deepseek-v4-pro", "deepseek-v4-flash",
+      "deepseek-v4-flash-vision-exp",
+      "mimo-v2.6-pro", "mimo-v2.6-flash", "mimo-v2.5", "mimo-v2.5-pro",
+      "minimax-m3.1-flash", "hy4-preview", "hy3"
+    )
+  ),
+  `opencode.go.responses` = list(
+    provider = "openai",
+    # \u540C\u7F51\u5173\u7684 OpenAI Responses \u534F\u8BAE\u5165\u53E3\uFF08{base_url}/responses\uFF09\uFF1B
+    # \u5185\u7F6E\u6E05\u5355\u7167 ZCode \u6A21\u677F\uFF08zcode-builtin.json\uFF09\u7684 builtinModelIds\u3002
+    base_url = "https://opencode.ai/inference/go/openai/v1",
+    model = "gpt-6-luna",
+    models = c("gpt-6-luna", "gpt-5.6-luna", "grok-4.7", "grok-4.6")
+  ),
+  `opencode.go.messages` = list(
+    provider = "anthropic",
+    # \u540C\u7F51\u5173\u7684 Anthropic Messages \u534F\u8BAE\u5165\u53E3\uFF08{base_url}/messages\uFF09\uFF1B
+    # \u5185\u7F6E\u6E05\u5355\u7167 ZCode \u6A21\u677F\uFF08zcode-builtin.json\uFF09\u7684 builtinModelIds\u3002
+    base_url = "https://opencode.ai/inference/anthropic/v1",
+    model = "minimax-m3",
+    models = c(
+      "minimax-m3", "minimax-m2.7", "minimax-m2.5",
+      "qwen3.8-max", "qwen3.8-flash", "qwen3.7-max", "qwen3.7-plus",
+      "qwen3.6-plus", "claude-haiku-5-5"
     )
   ),
   `zhipu.glm` = list(
     provider = "openai_compatible",
     base_url = "https://open.bigmodel.cn/api/paas/v4",
     model = "glm-4.6"
+  ),
+  `qwen.chat` = list(
+    provider = "openai_compatible",
+    base_url = "https://maas.qianwenaiapi.com/compatible-mode/v1",
+    model = "qwen3.8-flash",
+    models = c(
+      "qwen3.8-flash", "qwen3.8-max",
+      "qwen3.7-max", "qwen3.7-plus", "qwen3.7-flash",
+      "qwen3.6-plus", "qwen3.6-flash", "qwen3.5-plus", "qwen3.5-flash",
+      "qwen3-max", "qwen-plus", "qwen-flash", "qwen3-vl-plus"
+    )
+  ),
+  `qwen.messages` = list(
+    provider = "anthropic",
+    base_url = "https://maas.qianwenaiapi.com/apps/anthropic/v1",
+    model = "qwen3.8-flash",
+    models = c(
+      "qwen3.8-flash", "qwen3.8-max",
+      "qwen3.7-max", "qwen3.7-plus", "qwen3.7-flash",
+      "qwen3.6-plus", "qwen3.6-flash", "qwen3.5-plus", "qwen3.5-flash",
+      "qwen3-max", "qwen-plus", "qwen-flash", "qwen3-vl-plus"
+    )
   ),
   `kimi.moonshot` = list(
     provider = "openai_compatible",
@@ -97,12 +140,14 @@ dairh_config_default <- function() {
     # \u6A21\u578B\u4E0A\u4E0B\u6587\u7A97\u53E3\uFF08tokens\uFF09\uFF1A\u6807\u9898\u680F"\u4E0A\u4E0B\u6587\u5BB9\u91CF"\u7684\u5206\u6BCD\u3002\u7F51\u5173\u4E00\u822C\u4E0D\u4F1A\u544A\u77E5\uFF0C
     # \u7559 NA = \u672A\u77E5\uFF08\u6807\u9898\u680F\u53EA\u663E\u793A\u5360\u7528\uFF0C\u4E0D\u663E\u793A\u767E\u5206\u6BD4\uFF09\u3002
     context_window = NA_real_,
+    # 0.9 \u538B\u7F29\u63D0\u793A\u9608\u503C\uFF1A\u5360\u7528/\u7A97\u53E3 \u8FBE\u5230\u5B83\u65F6\u63A8\u4E00\u6B21\u901A\u77E5\u5E76\u9AD8\u4EAE\u8BFB\u6570\uFF1B0 = \u5173\u3002
+    compact_hint = 0.7,
     api_key = "",
     api_key_env = "DAI_API_KEY",
     temperature = 0.7,
-    # \u601D\u8003\u5F3A\u5EA6\uFF08\u63A8\u7406\u529B\u5EA6\uFF09\uFF1A\u900F\u4F20\u7ED9\u7F51\u5173\u2014\u2014openai_compatible \u8D70 api_args \u76F4\u8FDB\u8BF7\u6C42\u4F53
-    # \uFF08compatible provider \u7684 params \u767D\u540D\u5355\u4E0D\u8BA4\u6B64\u5B57\u6BB5\uFF09\uFF0Collama \u8D70 params() \u539F\u751F
-    # \u652F\u6301\uFF1B0.7 \u7F51\u5173\u63A2\u9488\u5B9E\u6D4B\u63A5\u53D7\u3002"" = \u4E0D\u53D1\u9001\u8BE5\u5B57\u6BB5\u3002\u53EF\u53D6 minimal/low/medium/high\u3002
+    # \u601D\u8003\u5F3A\u5EA6\uFF08\u63A8\u7406\u529B\u5EA6\uFF09\uFF1A\u900F\u4F20\u7ED9\u7F51\u5173\u30020.9 \u5730\u677F\u5347 ellmer 0.5.1 \u8D77\u5355\u901A\u9053\u2014\u2014\u7EDF\u4E00\u8D70
+    # params()\uFF08\u4E0A\u6E38 0.5.1 \u5DF2\u4FEE compatible provider \u7684\u767D\u540D\u5355\uFF0C\u5047\u7F51\u5173\u5B9E\u6D4B\u8FDB\u9876\u5C42\uFF09\u3002
+    # "" = \u4E0D\u53D1\u9001\u8BE5\u5B57\u6BB5\u3002\u53EF\u53D6 minimal/low/medium/high\u3002
     reasoning_effort = "",
     max_steps = 12,
     run_mode = "bg",
@@ -128,7 +173,12 @@ dairh_config_default <- function() {
     allow_subagent = TRUE,
     subagent_max_steps = 8,
     # \u5B50\u4EE3\u7406\u7528\u6A21\u578B\uFF1A\u7559\u7A7A = \u6CBF\u7528\u4E3B\u6A21\u578B\uFF1B\u586B\u8F7B\u91CF\u6A21\u578B\u53EF\u7701\u989D\u5EA6\uFF08usage \u65E5\u5FD7 model \u5B57\u6BB5\u81EA\u52A8\u8DDF\u968F\uFF09\u3002
-    delegate_model = ""
+    delegate_model = "",
+    # 0.9 \u8F7B\u91CF\u6A21\u578B\u8D77\u6807\u9898\uFF1A\u7559\u7A7A = \u4E3B\u6A21\u578B\uFF08\u9ED8\u8BA4\uFF09\uFF1B\u586B\u4FBF\u5B9C\u6A21\u578B\u540D\u53EF\u7701\u8D77\u6807\u9898\u7684\u8D26\u3002
+    title_model = "",
+    # 0.9 \u601D\u8003\u8FC7\u7A0B\u5C55\u793A\u5F00\u5173\uFF1A\u5173 = \u9762\u677F\u4E0D\u6E32\u67D3\u6298\u53E0\u601D\u8003\u5757\uFF08shinychat \u7684
+    # show_thinking_after_s \u8D1F\u503C\u901A\u9053\uFF09\uFF1B\u91CD\u5F00\u9762\u677F\u751F\u6548\u3002
+    show_thinking = TRUE
   )
 }
 
@@ -154,10 +204,17 @@ dairh_config_default <- function() {
 .dairh_norm_provider <- function(p) {
   if (is.null(p) || !length(p) || is.na(p)) return("ollama")
   p <- tolower(trimws(as.character(p)[[1]]))
-  if (identical(p, "ollama") || identical(p, "openai_compatible")) return(p)
+  if (p %in% c("ollama", "openai_compatible", "openai", "anthropic")) return(p)
+  # \u7F51\u5173\u6A21\u677F id \u4E5F\u80FD\u76F4\u63A5\u586B\uFF1Aopencode-go-chat/messages/responses \u81EA\u52A8\u5F52\u4E00
+  if (grepl("messages", p, fixed = TRUE) || grepl("anthropic", p, fixed = TRUE)) {
+    return("anthropic")
+  }
+  if (grepl("responses", p, fixed = TRUE)) return("openai")
   if (grepl("ollama", p, fixed = TRUE)) return("ollama")
-  if (grepl("openai", p, fixed = TRUE)) return("openai_compatible")
-  stop("\u672A\u77E5\u7684 provider: ", p, "\uFF08\u5E94\u4E3A ollama \u6216 openai_compatible\uFF09", call. = FALSE)
+  if (grepl("chat", p, fixed = TRUE) || grepl("openai", p, fixed = TRUE)) {
+    return("openai_compatible")
+  }
+  stop("\u672A\u77E5\u7684 provider: ", p, "\uFF08\u5E94\u4E3A ollama / openai_compatible / openai / anthropic\uFF09", call. = FALSE)
 }
 
 .dairh_norm_run_mode <- function(m) {
@@ -234,6 +291,10 @@ dairh_config_set <- function(...) {
     MoreArgs = list(template = dairh_config_default())
   )
   names(coerced) <- names(patch)
+  # NA \u6570\u503C\u843D\u76D8\u4E3A\u54E8\u5175\u4E32\u0020\u0022\u004E\u0041\u0022\uFF1AJSON null \u4F1A\u88AB defaults \u5408\u5E76\u9876\u56DE\u7F3A\u7701\u503C\uFF0C\u201Cleave empty = omit\u201D \u7684\u8BED\u4E49\uFF08temperature \u7B49\uFF09\u6D3B\u4E0D\u8FC7\u4E00\u6B21\u5F80\u56DE\uFF080.9 \u5B9E\u6D4B\uFF09\u3002
+  coerced <- lapply(coerced, function(v) {
+    if (is.numeric(v) && length(v) == 1L && is.na(v)) "NA" else v
+  })
   new_cfg <- utils::modifyList(
     dairh_config_get(),
     coerced,

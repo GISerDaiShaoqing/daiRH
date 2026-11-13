@@ -62,3 +62,63 @@ test_that("dairh_client attaches the rate env and accepts reasoning_effort", {
   expect_s3_class(cl2, "Chat")
   expect_true(is.environment(attr(cl2, ".dairh_rate")))
 })
+
+# 0.9: three gateway protocol modes - Responses (openai) and Messages (anthropic)
+test_that("dairh_client builds Responses and Messages providers offline", {
+  cfg <- list(
+    provider = "openai",
+    base_url = "http://127.0.0.1:9/v1", # never contacted at construction
+    model = "m1",
+    api_key = "sk-test",
+    api_key_env = "",
+    temperature = 0.2
+  )
+  cl <- daiRH::dairh_client(cfg)
+  expect_s3_class(cl, "Chat")
+  expect_true(is.environment(attr(cl, ".dairh_rate")))
+
+  cfg$provider <- "anthropic"
+  cl2 <- daiRH::dairh_client(cfg)
+  expect_s3_class(cl2, "Chat")
+  expect_true(is.environment(attr(cl2, ".dairh_rate")))
+})
+
+test_that("provider norm maps gateway template ids and rejects unknowns", {
+  expect_identical(daiRH:::.dairh_norm_provider("opencode-go-chat"),
+    "openai_compatible")
+  expect_identical(daiRH:::.dairh_norm_provider("opencode-go-messages"),
+    "anthropic")
+  expect_identical(daiRH:::.dairh_norm_provider("opencode-go-responses"),
+    "openai")
+  expect_error(daiRH:::.dairh_norm_provider("nonsense-provider"), "provider")
+})
+
+# 0.9: gateway presets ship builtin model lists for all three protocol modes
+test_that("gateway presets ship builtin model lists for all three modes", {
+  p <- daiRH:::DAI_LLM_PRESETS
+  expect_identical(p$`opencode.go.chat`$provider, "openai_compatible")
+  expect_identical(p$`opencode.go.responses`$provider, "openai")
+  expect_identical(p$`opencode.go.messages`$provider, "anthropic")
+  expect_true("gpt-6-luna" %in% p$`opencode.go.responses`$models)
+  expect_true("minimax-m3" %in% p$`opencode.go.messages`$models)
+  expect_true(length(p$`opencode.go.chat`$models) >= 15)
+})
+
+# 0.9: temperature = NA omits the param (some models reject it with HTTP 400)
+test_that("temperature NA omits the param; finite value keeps it", {
+  p1 <- daiRH:::.dai_build_params(NA_real_, "")
+  expect_false("temperature" %in% names(p1))
+  p2 <- daiRH:::.dai_build_params(0.5, "")
+  expect_equal(p2$temperature, 0.5)
+  p3 <- daiRH:::.dai_build_params(NA_real_, "high")
+  expect_false("temperature" %in% names(p3))
+  expect_true("reasoning_effort" %in% names(p3))
+})
+
+# 0.9 regression: default 0.7 applies only when the field is MISSING;
+# an explicitly-set NA must survive coalescing (it means "do not send")
+test_that("temperature resolution: default only when missing; NA stays NA", {
+  expect_equal(daiRH:::.dai_resolve_temperature(list()), 0.7)
+  expect_true(is.na(daiRH:::.dai_resolve_temperature(list(temperature = NA_real_))))
+  expect_equal(daiRH:::.dai_resolve_temperature(list(temperature = 0.5)), 0.5)
+})

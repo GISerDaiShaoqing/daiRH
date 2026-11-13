@@ -1,3 +1,43 @@
+# daiRH 0.9.0
+
+* **用量账本新增推理（思维链）明细 `reasoning_tokens`**：从请求的原始响应体
+  `usage` 里取（turn 对象自带原始响应，Chat Completions 口径
+  `completion_tokens_details$reasoning_tokens`，兜一手 Responses 口径
+  `output_tokens_details$reasoning_tokens`）。已含在 `output` 内、仅明细
+  拆分列，合计口径不变；端点未上报时整字段省略（与 `cost` 同款约定），
+  老账本行照常兼容。
+* **压缩触发提示（占用阈值）**：状态栏"上下文占用"达到模型窗口的阈值时
+  读数变警示色并推送一次通知（`compact_hint`，默认 0.7，设置页可调 0~1，
+  0 = 关；需已设置 `context_window`）。压缩/清空后占用降回阈值以下，
+  自动重新武装，不会重复打扰。
+* **轻量模型起标题 `title_model`**：留空 = 主模型（默认，与之前一致）。
+  配置后新会话的自动标题改走轻量模型（`reasoning_effort` 强制置空——
+  标题不需要思考），省主模型的账；标题请求照常进用量漏斗，账本按
+  `title_model` 记账，外部监测工具可按模型分账。
+* **思考过程展示开关 `show_thinking`（默认开）**：shinychat 0.5 原生渲染
+  折叠思考块；设置页可关（走 shinychat 的 `show_thinking_after_s` 负值
+  通道），重开面板生效。
+* **服务接入补齐三种协议模式**：provider 新增 `openai`（OpenAI Responses
+  协议，请求 `{base_url}/responses`）与 `anthropic`（Anthropic Messages
+  协议，请求 `{base_url}/messages`），与网关的 chat / messages / responses
+  三模板一一对应；provider 字段也接受模板 id（`opencode-go-chat/messages/
+  responses` 自动归一）。思考强度在 Responses 走原生 params；Anthropic 侧
+  不透传（budget 语义不同）。设置页 Provider 单选同步四选；预设新增
+  `opencode.go.responses` / `opencode.go.messages`（内置模型清单照 ZCode
+  模板），三模式的"列出模型"回退全部覆盖，另补 Anthropic 原生列模型
+  （`GET {base_url}/models`，`x-api-key` + `anthropic-version` 头）。
+  temperature 支持**留空 = 不发送**——Responses 推理模型等会拒收该字段
+  （网关 400 "Unsupported parameter" 实测），设置页清空即绕开。
+* **依赖地板升 ellmer ≥ 0.5.1**：思考强度透传回归单通道——`reasoning_effort`
+  统一走 `params()`（上游 0.5.1 已修 compatible provider 的 params 白名单，
+  本地假网关实测进请求体顶层），0.7 引入的 `api_args` 旁路撤销。
+* **修复：设置页下拉选项显示 `<U+XXXX>` 乱码（0.7 起潜伏）**：部分 R 会话的
+  `LC_CTYPE` 断到 C locale（`LC_CTYPE=C.UTF-8` 设置失败回退），运行期原生
+  编码转换把 UTF-8 字符串退化成字面文本——shiny 下拉选项首当其冲（标签
+  走另一条路径幸存，故"标签正常、选项乱码"）。两层修复：包加载时发现
+  LC_CTYPE 断线自动拨回 `.UTF-8`（`R/zzz.R`）；安装纪律明确要求清空
+  `LC_*` 再 `CMD INSTALL`（C locale 下安装解析会把坏字节写进安装树）。
+
 # daiRH 0.8.0
 
 * **压缩上下文：进度反馈 + 找回保险 + 状态栏旧账修正**：点击确认后弹出

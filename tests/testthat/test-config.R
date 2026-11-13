@@ -72,7 +72,7 @@ test_that("0.5 config fields: dirs / subagent settings", {
 })
 
 test_that("0.6 preset static model lists (GET /models fallback)", {
-  oc <- DAI_LLM_PRESETS[["opencode.go"]]
+  oc <- DAI_LLM_PRESETS[["opencode.go.chat"]]
   expect_true(is.character(oc$models) && length(oc$models) >= 5L)
   expect_true("glm-5.3-flash" %in% oc$models)
   expect_false(anyNA(oc$models))
@@ -133,6 +133,19 @@ test_that("0.8 config fields: defaults and coercion", {
   expect_identical(.dai_cfg_coerce("mascot", "", tpl), "")
 })
 
+# 0.9: compact hint threshold
+test_that("0.9 config field: compact_hint default and coercion", {
+  d <- dairh_config_default()
+  expect_identical(d$compact_hint, 0.7)
+  expect_identical(d$title_model, "")
+  expect_true(isTRUE(d$show_thinking))
+  tpl <- dairh_config_default()
+  expect_equal(as.numeric(.dai_cfg_coerce("compact_hint", "0.8", tpl)), 0.8)
+  expect_identical(.dai_cfg_coerce("title_model", "cheap-model", tpl), "cheap-model")
+  expect_false(.dai_cfg_coerce("show_thinking", "FALSE", tpl))
+  expect_true(.dai_cfg_coerce("show_thinking", "true", tpl))
+})
+
 test_that("0.7 mode persists through config roundtrip", {
   tmp <- file.path(tempdir(), paste0("daiRH-test-mode-",
     as.integer(Sys.time()), "-", Sys.getpid()))
@@ -148,4 +161,28 @@ test_that("0.7 mode persists through config roundtrip", {
   expect_identical(got$reasoning_effort, "medium")
   expect_identical(got$delegate_model, "tiny-model")
   expect_true(.dairh_is_plan_mode(got))
+})
+
+# 0.9: temperature NA persists via the "NA" sentinel (JSON null would be
+# coalesced back to the 0.7 default on read, defeating "leave empty = omit")
+test_that("temperature NA roundtrips through the NA sentinel", {
+  tmp <- file.path(tempdir(), paste0("daiRH-cfg-rt-", Sys.getpid()))
+  dir.create(tmp, recursive = TRUE)
+  withr::local_options(daiRH.config_path = file.path(tmp, "config.json"))
+  dairh_config_set(temperature = NA)
+  txt <- paste(readLines(file.path(tmp, "config.json"), warn = FALSE),
+    collapse = "\n")
+  expect_true(grepl('"temperature": "NA"', txt, fixed = TRUE))
+  expect_true(is.na(dairh_config_get()$temperature))
+})
+
+# 0.9: qwen presets via the Qianwen portal (both protocol modes)
+test_that("qwen presets ship both protocol modes with builtin lists", {
+  qc <- DAI_LLM_PRESETS[["qwen.chat"]]
+  expect_identical(qc$provider, "openai_compatible")
+  expect_true("qwen3-max" %in% qc$models)
+  expect_true(grepl("compatible-mode", qc$base_url, fixed = TRUE))
+  qm <- DAI_LLM_PRESETS[["qwen.messages"]]
+  expect_identical(qm$provider, "anthropic")
+  expect_true(grepl("/apps/anthropic", qm$base_url, fixed = TRUE))
 })

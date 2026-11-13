@@ -23,6 +23,64 @@ test_that("dairh_usage_resolve handles numeric(3) and named-list forms", {
   expect_equal(r3$cache_read, 0)
 })
 
+# 0.9: optional reasoning (chain-of-thought) detail, taken from the raw response
+# json carried on the turn; omitted entirely when the endpoint does not report it
+test_that("dairh_usage_resolve picks reasoning detail from raw response json", {
+  # Chat Completions shape: usage.completion_tokens_details.reasoning_tokens
+  j1 <- list(usage = list(
+    prompt_tokens = 100L,
+    completion_tokens = 50L,
+    completion_tokens_details = list(reasoning_tokens = 45L)
+  ))
+  r1 <- .dairh_usage_resolve(c(10, 5, 4), j1)
+  expect_equal(r1$reasoning_tokens, 45)
+  # Responses shape fallback: usage.output_tokens_details.reasoning_tokens
+  j2 <- list(usage = list(
+    output_tokens = 50L,
+    output_tokens_details = list(reasoning_tokens = 12L)
+  ))
+  r2 <- .dairh_usage_resolve(c(10, 5, 4), j2)
+  expect_equal(r2$reasoning_tokens, 12)
+  # endpoint without the detail: field omitted entirely
+  r3 <- .dairh_usage_resolve(c(10, 5, 4), list(usage = list(prompt_tokens = 1L)))
+  expect_false("reasoning_tokens" %in% names(r3))
+  # no json at all (old callers / fake turns): shape unchanged
+  r4 <- .dairh_usage_resolve(c(10, 5, 4))
+  expect_false("reasoning_tokens" %in% names(r4))
+  # junk or negative reasoning value: ignored
+  r5 <- .dairh_usage_resolve(c(10, 5, 4), list(usage = list(
+    completion_tokens_details = list(reasoning_tokens = "x"))))
+  expect_false("reasoning_tokens" %in% names(r5))
+  r6 <- .dairh_usage_resolve(c(10, 5, 4), list(usage = list(
+    completion_tokens_details = list(reasoning_tokens = -3L))))
+  expect_false("reasoning_tokens" %in% names(r6))
+  # NULL tokens still returns NULL even with json present
+  expect_null(.dairh_usage_resolve(NULL, j1))
+})
+
+test_that("usage funnel logs reasoning_tokens from AssistantTurn json", {
+  tmp <- file.path(tempdir(), paste0("dairh-usage-rt-",
+    as.integer(Sys.time()), "-", Sys.getpid()))
+  withr::local_options(daiRH.usage_dir = tmp)
+  cbs <- list()
+  fake <- list(on_request_end = function(cb) cbs[[length(cbs) + 1L]] <<- cb)
+  .dairh_usage_install(fake, "m-rt")
+  turn <- ellmer::AssistantTurn(
+    contents = list(ellmer::ContentText(text = "t")),
+    json = list(usage = list(
+      prompt_tokens = 7L,
+      completion_tokens = 20L,
+      completion_tokens_details = list(reasoning_tokens = 9L)
+    )),
+    tokens = c(5, 2, 0)
+  )
+  invisible(cbs[[1]](turn))
+  j <- jsonlite::parse_json(
+    readLines(file.path(tmp, "usage.jsonl"), warn = FALSE)[[1]],
+    simplifyVector = FALSE)
+  expect_equal(as.numeric(j$reasoning_tokens), 9)
+})
+
 test_that("dai_fmt_tokens formats counts for the header pill", {
   expect_identical(.dai_fmt_tokens(0), "0")
   expect_identical(.dai_fmt_tokens(999), "999")
@@ -168,4 +226,21 @@ test_that(".dairh_ctx_used falls back to get_tokens data frame", {
   expect_equal(.dairh_ctx_used(NULL, tb2), 4500)
   expect_null(.dairh_ctx_used(NULL, NULL))
   expect_null(.dairh_ctx_used(NULL, data.frame(input = numeric(0))))
+})
+
+# 0.9: compact hint threshold gate
+test_that(".dairh_ctx_hot threshold gate", {
+  expect_true(.dairh_ctx_hot(70000, 100000, 0.7))
+  expect_false(.dairh_ctx_hot(69999, 100000, 0.7))
+  # hint = 0 turns the hint off entirely
+  expect_false(.dairh_ctx_hot(70000, 100000, 0))
+  # unknown window or unknown usage: cannot judge
+  expect_false(.dairh_ctx_hot(70000, NA_real_, 0.7))
+  expect_false(.dairh_ctx_hot(NA_real_, 100000, 0.7))
+  expect_false(.dairh_ctx_hot(NULL, 100000, 0.7))
+  # out-of-range hint: treated as off
+  expect_false(.dairh_ctx_hot(70000, 100000, 1.1))
+  expect_false(.dairh_ctx_hot(70000, 100000, -0.2))
+  # exactly at threshold counts as hot
+  expect_true(.dairh_ctx_hot(70, 100, 0.7))
 })

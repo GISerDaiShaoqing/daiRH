@@ -3,7 +3,7 @@
 # \u8FFD\u52A0\u4E00\u884C jsonl \u5230 R_user_dir("daiRH","data")/usage/usage.jsonl\uFF0C
 # \u8BB0\u8D26\u8BED\u4E49\u4E0E"\u6309\u8BF7\u6C42\u8BA1\u8D39"\u7684\u7F51\u5173\uFF08\u5982\u6309\u6B21\u8BA1\u8D39\u7684\u5957\u9910\uFF09\u5BF9\u9F50\u3002
 # \u8BBE\u8BA1\u7EA6\u675F\uFF08\u5BF9\u8FED\u4EE3\u6700\u5C0F\u4FB5\u5165\uFF09\uFF1A
-#   - \u53EA\u4F9D\u8D56\u54CD\u5E94\u91CC\u672C\u6765\u5C31\u6709\u7684\u4E1C\u897F\uFF08turn@tokens + \u6A21\u578B\u540D\uFF09\uFF0C\u4E0D\u78B0 harness \u5185\u90E8\u72B6\u6001\uFF1B
+#   - \u53EA\u4F9D\u8D56\u54CD\u5E94\u91CC\u672C\u6765\u5C31\u6709\u7684\u4E1C\u897F\uFF08turn@tokens + turn@json \u63A8\u7406\u660E\u7EC6 + \u6A21\u578B\u540D\uFF09\uFF0C\u4E0D\u78B0 harness \u5185\u90E8\u72B6\u6001\uFF1B
 #   - \u5355\u4E00\u6F0F\u6597\uFF1Adairh_client() \u6784\u9020\u65F6\u7ECF ellmer \u7684 on_request_end \u56DE\u8C03\u6302\u4E0A\uFF0C
 #     \u9762\u677F / CLI / \u5B50\u4EE3\u7406 / \u8D77\u6807\u9898\u5168\u90E8\u81EA\u52A8\u8986\u76D6\uFF0C\u5404\u5904\u96F6\u6539\u52A8\uFF1B
 #   - \u65C1\u8DEF\uFF1A\u73AF\u5883\u53D8\u91CF DAIRH_USAGE_LOG=0 \u6574\u4F53\u5173\u95ED\uFF1B\u6D4B\u8BD5\u7528 options(daiRH.usage_dir=) \u6362\u76EE\u5F55\u3002
@@ -25,12 +25,30 @@
 # \u547D\u540D\u4E0E\u5916\u90E8\u76D1\u6D4B\u5DE5\u5177\u7684\u5F52\u4E00\u5316\u53E3\u5F84\u4E00\u81F4\uFF1Acache_read \u5373\u7F13\u5B58\u547D\u4E2D\u90E8\u5206
 # \uFF08\u7F51\u5173\u4FA7\u65E0\u8BBA\u53EB prompt_cache_hit_tokens \u8FD8\u662F cached_tokens\uFF0Cellmer \u5DF2\u5F52\u4E00\u4E3A\u7B2C 3 \u4E2A\u5206\u91CF\uFF09\u3002
 # \u7F51\u5173\u65E0\u72EC\u7ACB cache_write \u5B57\u6BB5\uFF0C\u7559\u7A7A\u7531\u76D1\u6D4B\u5DE5\u5177\u81EA\u884C\u7B97 input_uncached\u3002
-.dairh_usage_resolve <- function(tokens) {
+# 0.9 \u63A8\u7406\u660E\u7EC6\uFF1Areasoning_tokens \u4ECE\u539F\u59CB\u54CD\u5E94\u4F53 JSON \u7684 usage \u91CC\u53D6\uFF08turn@json \u662F
+# ellmer \u6302\u5728 AssistantTurn \u4E0A\u7684\u539F\u59CB\u54CD\u5E94\uFF09\uFF0C\u53EA\u6311\u8FD9\u4E00\u4E2A\u6570\uFF0C\u4E0D\u843D\u76D8\u6574\u4E2A\u54CD\u5E94\u4F53\u3002
+# Chat Completions \u53E3\u5F84 completion_tokens_details$reasoning_tokens\uFF0C
+# \u515C\u4E00\u624B Responses \u53E3\u5F84 output_tokens_details$reasoning_tokens\u3002
+# \u4E0A\u6E38\u53E3\u5F84\u91CC\u63A8\u7406\u5DF2\u542B\u5728 output \u5185\uFF0C\u53EA\u662F\u660E\u7EC6\u62C6\u5206\uFF0C\u4E0D\u53E6\u8BB0\u4E00\u7968\uFF1B
+# \u7AEF\u70B9\u672A\u4E0A\u62A5\u65F6\u6574\u5B57\u6BB5\u7701\u7565\uFF08\u4E0E cost \u540C\u6B3E\u7EA6\u5B9A\uFF09\u3002
+.dairh_usage_reasoning <- function(json) {
+  if (!is.list(json)) return(NULL)
+  u <- tryCatch(json$usage, error = function(e) NULL)
+  if (!is.list(u)) return(NULL)
+  v <- u$completion_tokens_details$reasoning_tokens
+  if (is.null(v)) v <- u$output_tokens_details$reasoning_tokens
+  if (is.null(v) || is.list(v)) return(NULL)
+  v <- suppressWarnings(as.numeric(v))
+  if (length(v) != 1L || !is.finite(v) || v < 0) return(NULL)
+  v
+}
+.dairh_usage_resolve <- function(tokens, json = NULL) {
   if (is.null(tokens)) return(NULL)
+  out <- NULL
   if (is.numeric(tokens) && length(tokens) == 3L) {
     v <- suppressWarnings(as.numeric(tokens))
     v[!is.finite(v) | v < 0] <- 0
-    return(list(input = v[[1]], output = v[[2]], cache_read = v[[3]]))
+    out <- list(input = v[[1]], output = v[[2]], cache_read = v[[3]])
   }
   # \u9632\u5FA1\u5206\u652F\uFF1A\u547D\u540D list \u5F62\u6001\uFF08\u6D4B\u8BD5\u5047\u4EF6 / \u672A\u6765 ellmer \u6539\u7ED3\u6784\u65F6\u515C\u5E95\uFF09
   grab <- function(field) {
@@ -41,11 +59,16 @@
     v <- suppressWarnings(as.numeric(if (is.null(v)) NA else v[[1]]))
     if (length(v) != 1L || is.na(v) || !is.finite(v) || v < 0) 0 else v
   }
-  list(
-    input = grab("input"),
-    output = grab("output"),
-    cache_read = grab("cached_input")
-  )
+  if (is.null(out)) {
+    out <- list(
+      input = grab("input"),
+      output = grab("output"),
+      cache_read = grab("cached_input")
+    )
+  }
+  rt <- .dairh_usage_reasoning(json)
+  if (!is.null(rt)) out$reasoning_tokens <- rt
+  out
 }
 
 # \u8FFD\u52A0\u4E00\u884C\u5230 usage.jsonl\uFF08\u4E8C\u8FDB\u5236\u8FFD\u52A0\u5199\uFF0C\u907F\u5F00\u672C\u5730 ASCII locale \u7684\u7F16\u7801\u8F6C\u6362\u5751\uFF1B
@@ -128,7 +151,9 @@
       dur <- as.numeric(difftime(Sys.time(), renv$t0, units = "secs"))
       if (!is.finite(dur) || dur < 0) dur <- NA_real_
       tk <- tryCatch(turn@tokens, error = function(e) NULL)
-      usage <- .dairh_usage_resolve(tk)
+      # 0.9 \u63A8\u7406\u660E\u7EC6\uFF1A\u53EA\u6311 json \u91CC\u7684\u63A8\u7406 token \u6570\uFF0C\u6574\u4E2A\u54CD\u5E94\u4F53\u4E0D\u5F80\u4E0B\u4F20\u4E5F\u4E0D\u843D\u76D8
+      rj <- tryCatch(turn@json %||% NULL, error = function(e) NULL)
+      usage <- .dairh_usage_resolve(tk, rj)
       if (is.null(usage)) return(invisible(FALSE))
       if (usage$input == 0 && usage$output == 0) return(invisible(FALSE))
       # tok/s\uFF1A\u8FC7\u77ED\u8BF7\u6C42\uFF08<0.05s\uFF09\u4E0D\u53EF\u4FE1\uFF0C\u4E0D\u5199\u4E0D\u5B58
@@ -196,4 +221,20 @@
     if (n <= 0) return(NULL)
     round(n * 0.4)
   }, error = function(e) NULL)
+}
+
+# 0.9 \u538B\u7F29\u89E6\u53D1\u63D0\u793A\u9608\u503C\uFF1A\u5360\u7528/\u7A97\u53E3 >= hint \u65F6\u72B6\u6001\u680F\u8BFB\u6570\u53D8\u8B66\u793A\u8272\u5E76\u63A8\u9001\u4E00\u6B21\u901A\u77E5\u3002
+# hint \u53D6 0\uFF08\u5173\uFF09~1\uFF1B\u7A97\u53E3\u672A\u77E5\u6216\u5360\u7528\u672A\u77E5\u65F6\u65E0\u6CD5\u5224\u5B9A\uFF0C\u6052 FALSE\u3002
+.dairh_ctx_hot <- function(used, window, hint) {
+  grab1 <- function(x) {
+    v <- suppressWarnings(as.numeric(x))
+    if (length(v) < 1L) NA_real_ else v[[1]]
+  }
+  h <- grab1(hint)
+  w <- grab1(window)
+  u <- grab1(used)
+  if (!is.finite(h) || h <= 0 || h > 1) return(FALSE)
+  if (!is.finite(w) || w <= 0) return(FALSE)
+  if (!is.finite(u) || u < 0) return(FALSE)
+  (u / w) >= h
 }
