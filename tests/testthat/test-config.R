@@ -83,6 +83,20 @@ test_that("0.6 preset static model lists (GET /models fallback)", {
   expect_null(DAI_LLM_PRESETS[["ollama.local"]]$models)
 })
 
+test_that("0.9 opencode.go presets all stay on the Go-plan gateway", {
+  # A base_url missing the /go/ segment silently lands on the
+  # credits-billed endpoint, which answers 402 Payment Required and
+  # reads like an exhausted plan quota (misdiagnosed once already).
+  for (nm in c("opencode.go.chat", "opencode.go.responses",
+               "opencode.go.messages")) {
+    p <- DAI_LLM_PRESETS[[nm]]
+    expect_true(grepl("/inference/go/", p$base_url),
+                info = paste(nm, "->", p$base_url))
+    expect_match(p$base_url, "^https://opencode\\.ai/",
+                 info = nm)
+  }
+})
+
 test_that("0.6 context_window config field (numeric coerce, blank = NA)", {
   tmp <- file.path(tempdir(), paste0("daiRH-test-cw-",
     as.integer(Sys.time()), "-", Sys.getpid()))

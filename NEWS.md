@@ -1,3 +1,11 @@
+# daiRH 0.9.0.9000（开发中）
+
+* 修正 `opencode.go.messages` 预设的 `base_url`：补上丢失的 `/go/` 段
+  （现为 `opencode.ai/inference/go/anthropic/v1`）。原 URL 指向按
+  credits 计费的普通 anthropic 入口，会把 Go 套餐内的正常请求拒成
+  402 Payment Required，极易误读成"套餐额度用尽"。附回归测试钉住
+  三个 `opencode.go.*` 预设都落在 Go 网关路径上。
+
 # daiRH 0.9.0
 
 * **用量账本新增推理（思维链）明细 `reasoning_tokens`**：从请求的原始响应体

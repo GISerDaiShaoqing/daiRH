@@ -85,7 +85,8 @@ DAI_LLM_PRESETS <- list(
     provider = "anthropic",
     # \u540C\u7F51\u5173\u7684 Anthropic Messages \u534F\u8BAE\u5165\u53E3\uFF08{base_url}/messages\uFF09\uFF1B
     # \u5185\u7F6E\u6E05\u5355\u7167 ZCode \u6A21\u677F\uFF08zcode-builtin.json\uFF09\u7684 builtinModelIds\u3002
-    base_url = "https://opencode.ai/inference/anthropic/v1",
+    # \u6CE8\u610F\u5FC5\u987B\u5E26 /go/ \uFF1A\u4E0D\u5E26\u6253\u5230\u7684\u662F\u6309 credits \u8BA1\u8D39\u7684\u666E\u901A\u5165\u53E3\uFF0C\u4F1A\u62A5 402\u3002
+    base_url = "https://opencode.ai/inference/go/anthropic/v1",
     model = "minimax-m3",
     models = c(
       "minimax-m3", "minimax-m2.7", "minimax-m2.5",
